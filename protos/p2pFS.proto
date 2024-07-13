@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package p2pFS;
+
+option go_package = "github.com/tomp332/p2fs/generated/p2pFS";
+
+service FileSharing {
+    rpc StoreChunk(StoreChunkRequest) returns (StoreChunkResponse);
+    rpc RetrieveChunk(RetrieveChunkRequest) returns (RetrieveChunkResponse);
+}
+
+message StoreChunkRequest {
+    bytes chunk = 1;
+}
+
+message StoreChunkResponse {
+    string hash = 1;
+}
+
+message RetrieveChunkRequest {
+    string hash = 1;
+}
+
+message RetrieveChunkResponse {
+    bytes chunk = 1;
+    bool exists = 2;
+}
