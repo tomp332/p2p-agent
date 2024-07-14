@@ -4,24 +4,49 @@ package p2pFS;
 
 option go_package = "github.com/tomp332/p2fs/generated/p2pFS";
 
+import "base.proto";
+
 service FileSharing {
-    rpc StoreChunk(StoreChunkRequest) returns (StoreChunkResponse);
-    rpc RetrieveChunk(RetrieveChunkRequest) returns (RetrieveChunkResponse);
+  rpc UploadFile(UploadFileRequest) returns (UploadFileResponse);
+  rpc DownloadFile(DownloadFileRequest) returns (DownloadFileResponse);
+  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthResponse);
+}
+message HealthCheckRequest {} // Empty request for health check
+
+message HealthResponse {
+  base.HealthStatus status = 1;
 }
 
-message StoreChunkRequest {
-    bytes chunk = 1;
+message UploadFileRequest {
+  base.RPCMessage base = 1;
+  string fileId = 2;
+  bytes payload = 3;
 }
 
-message StoreChunkResponse {
-    string hash = 1;
+message UploadFileResponse {
+  base.RPCMessage base = 1;
+  string fileId = 2;
 }
 
-message RetrieveChunkRequest {
-    string hash = 1;
+message DownloadFileRequest {
+  base.RPCMessage base = 1;
+  string fileId = 2;
 }
 
-message RetrieveChunkResponse {
-    bytes chunk = 1;
-    bool exists = 2;
+message DownloadFileResponse {
+  base.RPCMessage base = 1;
+  bytes chunk = 2;
+  string fileId = 3;
+  bool exists = 4;
+}
+
+message DeleteFileRequest {
+  base.RPCMessage base = 1;
+  string fileId = 2;
+}
+
+message DeleteFileResponse {
+  base.RPCMessage base = 1;
+  string fileId = 2;
 }

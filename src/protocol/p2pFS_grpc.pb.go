@@ -19,16 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	FileSharing_StoreChunk_FullMethodName    = "/p2pFS.FileSharing/StoreChunk"
-	FileSharing_RetrieveChunk_FullMethodName = "/p2pFS.FileSharing/RetrieveChunk"
+	FileSharing_UploadFile_FullMethodName   = "/p2pFS.FileSharing/UploadFile"
+	FileSharing_DownloadFile_FullMethodName = "/p2pFS.FileSharing/DownloadFile"
+	FileSharing_DeleteFile_FullMethodName   = "/p2pFS.FileSharing/DeleteFile"
+	FileSharing_HealthCheck_FullMethodName  = "/p2pFS.FileSharing/HealthCheck"
 )
 
 // FileSharingClient is the client API for FileSharing service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FileSharingClient interface {
-	StoreChunk(ctx context.Context, in *StoreChunkRequest, opts ...grpc.CallOption) (*StoreChunkResponse, error)
-	RetrieveChunk(ctx context.Context, in *RetrieveChunkRequest, opts ...grpc.CallOption) (*RetrieveChunkResponse, error)
+	UploadFile(ctx context.Context, in *UploadFileRequest, opts ...grpc.CallOption) (*UploadFileResponse, error)
+	DownloadFile(ctx context.Context, in *DownloadFileRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error)
+	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
+	HealthCheck(ctx context.Context, in *HealthCheckRequest, opts ...grpc.CallOption) (*HealthResponse, error)
 }
 
 type fileSharingClient struct {
@@ -39,20 +43,40 @@ func NewFileSharingClient(cc grpc.ClientConnInterface) FileSharingClient {
 	return &fileSharingClient{cc}
 }
 
-func (c *fileSharingClient) StoreChunk(ctx context.Context, in *StoreChunkRequest, opts ...grpc.CallOption) (*StoreChunkResponse, error) {
+func (c *fileSharingClient) UploadFile(ctx context.Context, in *UploadFileRequest, opts ...grpc.CallOption) (*UploadFileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(StoreChunkResponse)
-	err := c.cc.Invoke(ctx, FileSharing_StoreChunk_FullMethodName, in, out, cOpts...)
+	out := new(UploadFileResponse)
+	err := c.cc.Invoke(ctx, FileSharing_UploadFile_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fileSharingClient) RetrieveChunk(ctx context.Context, in *RetrieveChunkRequest, opts ...grpc.CallOption) (*RetrieveChunkResponse, error) {
+func (c *fileSharingClient) DownloadFile(ctx context.Context, in *DownloadFileRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RetrieveChunkResponse)
-	err := c.cc.Invoke(ctx, FileSharing_RetrieveChunk_FullMethodName, in, out, cOpts...)
+	out := new(DownloadFileResponse)
+	err := c.cc.Invoke(ctx, FileSharing_DownloadFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileSharingClient) DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteFileResponse)
+	err := c.cc.Invoke(ctx, FileSharing_DeleteFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileSharingClient) HealthCheck(ctx context.Context, in *HealthCheckRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HealthResponse)
+	err := c.cc.Invoke(ctx, FileSharing_HealthCheck_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +87,10 @@ func (c *fileSharingClient) RetrieveChunk(ctx context.Context, in *RetrieveChunk
 // All implementations must embed UnimplementedFileSharingServer
 // for forward compatibility
 type FileSharingServer interface {
-	StoreChunk(context.Context, *StoreChunkRequest) (*StoreChunkResponse, error)
-	RetrieveChunk(context.Context, *RetrieveChunkRequest) (*RetrieveChunkResponse, error)
+	UploadFile(context.Context, *UploadFileRequest) (*UploadFileResponse, error)
+	DownloadFile(context.Context, *DownloadFileRequest) (*DownloadFileResponse, error)
+	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
+	HealthCheck(context.Context, *HealthCheckRequest) (*HealthResponse, error)
 	mustEmbedUnimplementedFileSharingServer()
 }
 
@@ -72,11 +98,17 @@ type FileSharingServer interface {
 type UnimplementedFileSharingServer struct {
 }
 
-func (UnimplementedFileSharingServer) StoreChunk(context.Context, *StoreChunkRequest) (*StoreChunkResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StoreChunk not implemented")
+func (UnimplementedFileSharingServer) UploadFile(context.Context, *UploadFileRequest) (*UploadFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
 }
-func (UnimplementedFileSharingServer) RetrieveChunk(context.Context, *RetrieveChunkRequest) (*RetrieveChunkResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RetrieveChunk not implemented")
+func (UnimplementedFileSharingServer) DownloadFile(context.Context, *DownloadFileRequest) (*DownloadFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DownloadFile not implemented")
+}
+func (UnimplementedFileSharingServer) DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteFile not implemented")
+}
+func (UnimplementedFileSharingServer) HealthCheck(context.Context, *HealthCheckRequest) (*HealthResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HealthCheck not implemented")
 }
 func (UnimplementedFileSharingServer) mustEmbedUnimplementedFileSharingServer() {}
 
@@ -91,38 +123,74 @@ func RegisterFileSharingServer(s grpc.ServiceRegistrar, srv FileSharingServer) {
 	s.RegisterService(&FileSharing_ServiceDesc, srv)
 }
 
-func _FileSharing_StoreChunk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StoreChunkRequest)
+func _FileSharing_UploadFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadFileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileSharingServer).StoreChunk(ctx, in)
+		return srv.(FileSharingServer).UploadFile(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileSharing_StoreChunk_FullMethodName,
+		FullMethod: FileSharing_UploadFile_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileSharingServer).StoreChunk(ctx, req.(*StoreChunkRequest))
+		return srv.(FileSharingServer).UploadFile(ctx, req.(*UploadFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FileSharing_RetrieveChunk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RetrieveChunkRequest)
+func _FileSharing_DownloadFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DownloadFileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileSharingServer).RetrieveChunk(ctx, in)
+		return srv.(FileSharingServer).DownloadFile(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileSharing_RetrieveChunk_FullMethodName,
+		FullMethod: FileSharing_DownloadFile_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileSharingServer).RetrieveChunk(ctx, req.(*RetrieveChunkRequest))
+		return srv.(FileSharingServer).DownloadFile(ctx, req.(*DownloadFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FileSharing_DeleteFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileSharingServer).DeleteFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FileSharing_DeleteFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileSharingServer).DeleteFile(ctx, req.(*DeleteFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FileSharing_HealthCheck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HealthCheckRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileSharingServer).HealthCheck(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FileSharing_HealthCheck_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileSharingServer).HealthCheck(ctx, req.(*HealthCheckRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -135,12 +203,20 @@ var FileSharing_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*FileSharingServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "StoreChunk",
-			Handler:    _FileSharing_StoreChunk_Handler,
+			MethodName: "UploadFile",
+			Handler:    _FileSharing_UploadFile_Handler,
 		},
 		{
-			MethodName: "RetrieveChunk",
-			Handler:    _FileSharing_RetrieveChunk_Handler,
+			MethodName: "DownloadFile",
+			Handler:    _FileSharing_DownloadFile_Handler,
+		},
+		{
+			MethodName: "DeleteFile",
+			Handler:    _FileSharing_DeleteFile_Handler,
+		},
+		{
+			MethodName: "HealthCheck",
+			Handler:    _FileSharing_HealthCheck_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
