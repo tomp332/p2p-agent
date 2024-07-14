@@ -26,6 +26,7 @@ type NodeOptions struct {
 
 type Node struct {
 	NodeOptions
+	ID             string
 	Context        context.Context
 	wg             sync.WaitGroup
 	ConnectedPeers map[string]pb.FileSharingClient
@@ -89,6 +90,7 @@ func (n *Node) handleBootstrap() {
 
 func NewNode(options *NodeOptions) *Node {
 	node := &Node{
+		ID:             GenerateRandomID(),
 		Context:        context.Background(),
 		NodeOptions:    *options,
 		wg:             sync.WaitGroup{},
@@ -97,6 +99,7 @@ func NewNode(options *NodeOptions) *Node {
 	if options.BootstrapPeerAddrs != nil {
 		node.handleBootstrap()
 	}
+	log.Println("Created new Node with ID: " + node.ID)
 	return node
 }
 
