@@ -1,4 +1,4 @@
-package src
+package common
 
 import (
 	"encoding/json"
@@ -20,6 +20,7 @@ func init() {
 
 type Config struct {
 	ServerPort           int32         `json:"server_port"`
+	ServerHost           string        `json:"server_host"`
 	BootstrapPeerAddrs   []string      `json:"bootstrap_peer_addrs"`
 	BootstrapNodeTimeout time.Duration `json:"bootstrap_node_timeout"`
 	LogLevel             string        `json:"log_level"`

@@ -19,34 +19,27 @@ message HealthResponse {
 }
 
 message UploadFileRequest {
-  base.RPCMessage base = 1;
-  string fileId = 2;
   bytes payload = 3;
 }
 
 message UploadFileResponse {
-  base.RPCMessage base = 1;
   string fileId = 2;
 }
 
 message DownloadFileRequest {
-  base.RPCMessage base = 1;
   string fileId = 2;
 }
 
 message DownloadFileResponse {
-  base.RPCMessage base = 1;
   bytes chunk = 2;
   string fileId = 3;
   bool exists = 4;
 }
 
 message DeleteFileRequest {
-  base.RPCMessage base = 1;
   string fileId = 2;
 }
 
 message DeleteFileResponse {
-  base.RPCMessage base = 1;
   string fileId = 2;
 }

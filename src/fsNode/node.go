@@ -1,14 +1,16 @@
-package src
+package fsNode
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/tomp332/p2fs/src/common"
 	pb "github.com/tomp332/p2fs/src/protocol"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
-	"net"
 	"sync"
 	"time"
 )
@@ -20,9 +22,9 @@ type newPeer struct {
 
 type NodeOptions struct {
 	Storage              map[string][]byte
-	ServerPort           int32
 	BootstrapPeerAddrs   []string
 	BootstrapNodeTimeout time.Duration
+	ServerOptions
 }
 
 type Node struct {
@@ -38,49 +40,32 @@ type Node struct {
 func NewNode(options *NodeOptions) *Node {
 	ctx, cancel := context.WithCancel(context.Background())
 	node := &Node{
-		ID:             GenerateRandomID(),
+		ID:             common.GenerateRandomID(),
 		Context:        ctx,
 		NodeOptions:    *options,
 		wg:             sync.WaitGroup{},
 		ConnectedPeers: make(map[string]pb.FileSharingClient),
 		cancelFunc:     cancel,
 	}
+	node.fileSharingServer = NewFileSharingServer(node)
+	err := node.fileSharingServer.StartServer()
+	if err != nil {
+		common.Logger.Fatal().Msg(err.Error())
+	}
 	if options.BootstrapPeerAddrs != nil {
 		if err := node.handleBootstrap(); err != nil {
-			Logger.Error().Err(err).Msg("handleBootstrap failed")
+			common.Logger.Error().Err(err).Msg("handleBootstrap failed")
 			log.Fatal(err)
 		}
 	}
-	Logger.Info().Str("nodeID", node.ID).Msg("Created new Node.")
+	common.Logger.Info().Str("nodeID", node.ID).Msg("Created new Node.")
 	return node
 }
 
-// StartServer starts the gRPC server.
-func (n *Node) StartServer() error {
-	errorChan := make(chan error, 1)
-
-	n.wg.Add(1)
-	go func() {
-		defer n.wg.Done()
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", n.ServerPort))
-		if err != nil {
-			errorChan <- err
-			return
-		}
-		n.fileSharingServer = &FileSharingServer{}
-		n.fileSharingServer.grpcServer = grpc.NewServer()
-		pb.RegisterFileSharingServer(n.fileSharingServer.grpcServer, n.fileSharingServer)
-		Logger.Info().Int32("serverPort", n.ServerPort).Msg("Started gRPC Node server.")
-		if err := n.fileSharingServer.grpcServer.Serve(lis); err != nil {
-			errorChan <- fmt.Errorf("failed to serve: %v", err)
-		}
-	}()
-
-	select {
-	case err := <-errorChan:
-		return err
-	case <-time.After(time.Second * 1): // Adjust timeout as needed
-		return nil
+func (n *Node) Terminate() {
+	if n.fileSharingServer != nil {
+		n.fileSharingServer.StopServer()
+		n.cancelFunc()
 	}
 }
 
@@ -92,7 +77,7 @@ func (n *Node) ConnectToNode(address *string) (pb.FileSharingClient, error) {
 		return nil, err
 	}
 	c := pb.NewFileSharingClient(conn)
-	// Perform a health check to determine if the boostrap node is valid.
+	// Perform a health check to determine if the boostrap fsNode is valid.
 	healthCtx, healthCancel := context.WithTimeout(context.Background(), n.BootstrapNodeTimeout)
 	defer healthCancel()
 
@@ -102,28 +87,45 @@ func (n *Node) ConnectToNode(address *string) (pb.FileSharingClient, error) {
 		if err != nil {
 			return nil, err
 		} // Close the connection if the Healthcheck fails
-		return nil, fmt.Errorf("failed to validate health for node fileSharingServer: %s", *address)
+		return nil, fmt.Errorf("failed to validate health for fsNode fileSharingServer: %s", *address)
 	}
 	return c, nil
 }
 
-func (n *Node) Terminate() error {
-	if err := n.stopServer(); err != nil {
-		return err
+func (n *Node) UploadFile(ctx context.Context, req *pb.UploadFileRequest) (*pb.UploadFileResponse, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
 	}
-	n.cancelFunc()
-	return nil
+	hash := sha256.Sum256(req.Payload)
+	fileId := hex.EncodeToString(hash[:])
+	n.Storage[fileId] = req.Payload
+	return &pb.UploadFileResponse{
+		FileId: fileId,
+	}, nil
 }
 
-func (n *Node) stopServer() error {
-	if n.fileSharingServer != nil {
-		Logger.Debug().Msg("Stopping gRPC Node server.")
-		n.fileSharingServer.grpcServer.GracefulStop()
-		n.wg.Wait()
-		Logger.Info().Msg("gRPC gRPC server stopped.")
-		return nil
-	}
-	return errors.New("file sharing server has been terminated")
+func (n *Node) DownloadFile(ctx context.Context, req *pb.DownloadFileRequest) (*pb.DownloadFileResponse, error) {
+	chunk, exists := n.Storage[req.FileId]
+	return &pb.DownloadFileResponse{
+		Chunk:  chunk,
+		FileId: req.FileId,
+		Exists: exists,
+	}, nil
+}
+
+func (n *Node) DeleteFile(ctx context.Context, req *pb.DeleteFileRequest) (*pb.DeleteFileResponse, error) {
+	delete(n.Storage, req.FileId)
+	return &pb.DeleteFileResponse{
+		FileId: req.FileId,
+	}, nil
+}
+
+func (n *Node) HealthCheck(ctx context.Context, req *pb.HealthCheckRequest) (*pb.HealthResponse, error) {
+	return &pb.HealthResponse{
+		Status: pb.HealthStatus_ALIVE,
+	}, nil
 }
 
 func (n *Node) handleBootstrap() error {
@@ -141,7 +143,7 @@ func (n *Node) handleBootstrap() error {
 				defer n.wg.Done()
 				c, err := n.ConnectToNode(&addr)
 				if err != nil {
-					log.Printf("failed to connect to bootstrap node %s: %v", addr, err)
+					log.Printf("failed to connect to bootstrap fsNode %s: %v", addr, err)
 					return
 				}
 				newPeerUpdates <- newPeer{address: addr, client: c}

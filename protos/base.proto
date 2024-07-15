@@ -7,9 +7,8 @@ import "google/protobuf/timestamp.proto";
 option go_package = "github.com/tomp332/p2fs/generated/p2pFS";
 
 message RPCMessage {
-  string id = 1;
+  string messageId = 1;
   google.protobuf.Timestamp timestamp = 2;
-  string nodeID = 3;
 }
 
 enum HealthStatus{

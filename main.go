@@ -1,30 +1,27 @@
 package main
 
 import (
-	"github.com/tomp332/p2fs/src"
+	"github.com/tomp332/p2fs/src/common"
+	"github.com/tomp332/p2fs/src/fsNode"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
 func main() {
-	nodeOptions := &src.NodeOptions{
-		Storage:              map[string][]byte{},
-		BootstrapPeerAddrs:   src.MainConfig.BootstrapPeerAddrs,
-		ServerPort:           src.MainConfig.ServerPort,
-		BootstrapNodeTimeout: src.MainConfig.BootstrapNodeTimeout,
+	nodeOptions := &fsNode.NodeOptions{
+		Storage:            map[string][]byte{},
+		BootstrapPeerAddrs: common.MainConfig.BootstrapPeerAddrs,
+		ServerOptions: fsNode.ServerOptions{
+			ServerPort: common.MainConfig.ServerPort,
+			ServerHost: common.MainConfig.ServerHost,
+		},
+		BootstrapNodeTimeout: common.MainConfig.BootstrapNodeTimeout,
 	}
-	node := src.NewNode(nodeOptions)
-	if err := node.StartServer(); err != nil {
-		src.Logger.Err(err).Msg("Failed to start server")
-		os.Exit(1)
-	}
+	node := fsNode.NewNode(nodeOptions)
 	// Signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
-	src.Logger.Debug().Msg("Received shutdown signal, exiting gracefully...")
-	if err := node.Terminate(); err != nil {
-		src.Logger.Fatal().Err(err)
-	}
+	node.Terminate()
 }
