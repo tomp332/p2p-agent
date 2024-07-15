@@ -1,4 +1,4 @@
-module github.com/tomp332/p2fs
+module github.com/tomp332/p2p-agent
 
 go 1.22.3
 

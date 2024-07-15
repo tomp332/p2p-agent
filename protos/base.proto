@@ -1,15 +1,23 @@
 syntax = "proto3";
 
-package base;
+package p2p_agent;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/tomp332/p2fs/generated/p2pFS";
+option go_package = "./src/pb";
 
+service NodeService {
+  rpc HealthCheck(HealthCheckRequest) returns (HealthResponse);
+}
+
+message HealthCheckRequest {} // Empty request for health check
+
+message HealthResponse {
+  p2p_agent.HealthStatus status = 1;
+}
 message RPCMessage {
-  string id = 1;
+  string messageId = 1;
   google.protobuf.Timestamp timestamp = 2;
-  string nodeID = 3;
 }
 
 enum HealthStatus{
