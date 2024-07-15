@@ -1,0 +1,7 @@
+{
+  "server_port": 5001,
+  "bootstrap_node_timeout": 6,
+  "bootstrap_peer_addrs": [],
+  "log_level": "debug",
+  "logger_mode": "dev"
+}

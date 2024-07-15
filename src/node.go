@@ -2,6 +2,7 @@ package src
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	pb "github.com/tomp332/p2fs/src/protocol"
 	"google.golang.org/grpc"
@@ -26,84 +27,64 @@ type NodeOptions struct {
 
 type Node struct {
 	NodeOptions
-	ID             string
-	Context        context.Context
-	wg             sync.WaitGroup
-	ConnectedPeers map[string]pb.FileSharingClient
-	server         *FileSharingServer
+	ID                string
+	Context           context.Context
+	wg                sync.WaitGroup
+	ConnectedPeers    map[string]pb.FileSharingClient
+	fileSharingServer *FileSharingServer
+	cancelFunc        context.CancelFunc
 }
 
-func (n *Node) StartServer() {
+func NewNode(options *NodeOptions) *Node {
+	ctx, cancel := context.WithCancel(context.Background())
+	node := &Node{
+		ID:             GenerateRandomID(),
+		Context:        ctx,
+		NodeOptions:    *options,
+		wg:             sync.WaitGroup{},
+		ConnectedPeers: make(map[string]pb.FileSharingClient),
+		cancelFunc:     cancel,
+	}
+	if options.BootstrapPeerAddrs != nil {
+		if err := node.handleBootstrap(); err != nil {
+			Logger.Error().Err(err).Msg("handleBootstrap failed")
+			log.Fatal(err)
+		}
+	}
+	Logger.Info().Str("nodeID", node.ID).Msg("Created new Node.")
+	return node
+}
+
+// StartServer starts the gRPC server.
+func (n *Node) StartServer() error {
+	errorChan := make(chan error, 1)
+
 	n.wg.Add(1)
 	go func() {
 		defer n.wg.Done()
 		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", n.ServerPort))
 		if err != nil {
-			log.Fatalf("failed to listen: %v", err)
+			errorChan <- err
+			return
 		}
-		s := &FileSharingServer{}
-		s.Server = grpc.NewServer()
-		pb.RegisterFileSharingServer(s.Server, s)
-		log.Printf("gRPC server listening on port %d", n.ServerPort)
-		if err := s.Server.Serve(lis); err != nil {
-			log.Fatalf("failed to serve: %v", err)
-		}
-	}()
-}
-
-func (n *Node) StopServer() {
-	log.Println("Stopping gRPC server...")
-	n.server.Server.GracefulStop()
-	n.wg.Wait()
-	log.Println("gRPC server stopped.")
-}
-
-func (n *Node) handleBootstrap() {
-	newPeerUpdates := make(chan newPeer)
-	go func() {
-		for update := range newPeerUpdates {
-			n.ConnectedPeers[update.address] = update.client
+		n.fileSharingServer = &FileSharingServer{}
+		n.fileSharingServer.grpcServer = grpc.NewServer()
+		pb.RegisterFileSharingServer(n.fileSharingServer.grpcServer, n.fileSharingServer)
+		Logger.Info().Int32("serverPort", n.ServerPort).Msg("Started gRPC Node server.")
+		if err := n.fileSharingServer.grpcServer.Serve(lis); err != nil {
+			errorChan <- fmt.Errorf("failed to serve: %v", err)
 		}
 	}()
-	// Connect to bootstrap nodes
-	if n.BootstrapPeerAddrs != nil {
-		for _, address := range n.BootstrapPeerAddrs {
-			n.wg.Add(1)
-			go func(addr string) {
-				defer n.wg.Done()
-				c, err := n.connectToNode(&addr)
-				if err != nil {
-					log.Printf("failed to connect to bootstrap node %s: %v", addr, err)
-					return
-				}
-				newPeerUpdates <- newPeer{address: addr, client: c}
-			}(address)
-		}
-	}
-	n.wg.Wait()
-	close(newPeerUpdates)
-	if len(n.ConnectedPeers) != len(n.BootstrapPeerAddrs) {
-		log.Fatalf("Bootstraping process failed, expected %d bootstrapped nodes,"+
-			" ended up with %d", len(n.BootstrapPeerAddrs), len(n.ConnectedPeers))
+
+	select {
+	case err := <-errorChan:
+		return err
+	case <-time.After(time.Second * 1): // Adjust timeout as needed
+		return nil
 	}
 }
 
-func NewNode(options *NodeOptions) *Node {
-	node := &Node{
-		ID:             GenerateRandomID(),
-		Context:        context.Background(),
-		NodeOptions:    *options,
-		wg:             sync.WaitGroup{},
-		ConnectedPeers: make(map[string]pb.FileSharingClient),
-	}
-	if options.BootstrapPeerAddrs != nil {
-		node.handleBootstrap()
-	}
-	log.Println("Created new Node with ID: " + node.ID)
-	return node
-}
-
-func (n *Node) connectToNode(address *string) (pb.FileSharingClient, error) {
+func (n *Node) ConnectToNode(address *string) (pb.FileSharingClient, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	conn, err := grpc.NewClient(*address, opts...)
@@ -121,7 +102,56 @@ func (n *Node) connectToNode(address *string) (pb.FileSharingClient, error) {
 		if err != nil {
 			return nil, err
 		} // Close the connection if the Healthcheck fails
-		return nil, fmt.Errorf("failed to validate health for node server: %s", *address)
+		return nil, fmt.Errorf("failed to validate health for node fileSharingServer: %s", *address)
 	}
 	return c, nil
+}
+
+func (n *Node) Terminate() error {
+	if err := n.stopServer(); err != nil {
+		return err
+	}
+	n.cancelFunc()
+	return nil
+}
+
+func (n *Node) stopServer() error {
+	if n.fileSharingServer != nil {
+		Logger.Info().Msg("Stopping gRPC Node server.")
+		n.fileSharingServer.grpcServer.GracefulStop()
+		n.wg.Wait()
+		Logger.Debug().Msg("gRPC fileSharingServer stopped.")
+		return nil
+	}
+	return errors.New("file sharing server has been terminated")
+}
+
+func (n *Node) handleBootstrap() error {
+	newPeerUpdates := make(chan newPeer)
+	go func() {
+		for update := range newPeerUpdates {
+			n.ConnectedPeers[update.address] = update.client
+		}
+	}()
+	// Connect to bootstrap nodes
+	if n.BootstrapPeerAddrs != nil {
+		for _, address := range n.BootstrapPeerAddrs {
+			n.wg.Add(1)
+			go func(addr string) {
+				defer n.wg.Done()
+				c, err := n.ConnectToNode(&addr)
+				if err != nil {
+					log.Printf("failed to connect to bootstrap node %s: %v", addr, err)
+					return
+				}
+				newPeerUpdates <- newPeer{address: addr, client: c}
+			}(address)
+		}
+	}
+	n.wg.Wait()
+	close(newPeerUpdates)
+	if len(n.ConnectedPeers) != len(n.BootstrapPeerAddrs) {
+		return errors.New(fmt.Sprintf("Bootstraping process failed, expected %d bootstrapped nodes,ended up with %d", len(n.BootstrapPeerAddrs), len(n.ConnectedPeers)))
+	}
+	return nil
 }

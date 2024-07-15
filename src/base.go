@@ -11,5 +11,5 @@ type Options struct {
 
 type FileSharingServer struct {
 	pb.FileSharingServer
-	Server *grpc.Server
+	grpcServer *grpc.Server
 }

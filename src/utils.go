@@ -6,7 +6,7 @@ import "github.com/google/uuid"
 func GenerateRandomID() string {
 	u, err := uuid.NewUUID()
 	if err != nil {
-		panic(err)
+		Logger.Fatal().Err(err).Msg("Could not generate UUID")
 	}
 	return u.String()
 }

@@ -2,31 +2,29 @@ package main
 
 import (
 	"github.com/tomp332/p2fs/src"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
-
-var bootstrapAddresses = []string{
-	"192.168.6.41:5001",
-	"192.168.6.49:5002",
-}
 
 func main() {
 	nodeOptions := &src.NodeOptions{
 		Storage:              map[string][]byte{},
-		BootstrapPeerAddrs:   bootstrapAddresses,
-		ServerPort:           5001,
-		BootstrapNodeTimeout: time.Second * 6,
+		BootstrapPeerAddrs:   src.MainConfig.BootstrapPeerAddrs,
+		ServerPort:           src.MainConfig.ServerPort,
+		BootstrapNodeTimeout: src.MainConfig.BootstrapNodeTimeout,
 	}
 	node := src.NewNode(nodeOptions)
-	node.StartServer()
+	if err := node.StartServer(); err != nil {
+		src.Logger.Err(err).Msg("Failed to start server")
+		os.Exit(1)
+	}
 	// Signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
-	log.Println("Received shutdown signal, exiting gracefully...")
-	node.StopServer()
+	src.Logger.Debug().Msg("Received shutdown signal, exiting gracefully...")
+	if err := node.Terminate(); err != nil {
+		src.Logger.Fatal().Err(err)
+	}
 }
