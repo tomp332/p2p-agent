@@ -117,10 +117,10 @@ func (n *Node) Terminate() error {
 
 func (n *Node) stopServer() error {
 	if n.fileSharingServer != nil {
-		Logger.Info().Msg("Stopping gRPC Node server.")
+		Logger.Debug().Msg("Stopping gRPC Node server.")
 		n.fileSharingServer.grpcServer.GracefulStop()
 		n.wg.Wait()
-		Logger.Debug().Msg("gRPC fileSharingServer stopped.")
+		Logger.Info().Msg("gRPC gRPC server stopped.")
 		return nil
 	}
 	return errors.New("file sharing server has been terminated")

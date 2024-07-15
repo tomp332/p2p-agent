@@ -2,9 +2,9 @@ package src
 
 import (
 	"fmt"
+	"github.com/mattn/go-colorable"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -30,7 +30,7 @@ func SetupLogger() {
 }
 
 func setupDevLogger() {
-	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+	output := zerolog.ConsoleWriter{Out: colorable.NewColorableStdout(), TimeFormat: time.RFC3339}
 	output.FormatLevel = func(i interface{}) string {
 		return strings.ToUpper(fmt.Sprintf("|%-4s|", i))
 	}
