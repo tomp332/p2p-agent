@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -14,7 +15,7 @@ import (
 
 func main() {
 	// Load configuration
-	conf, err := util.LoadConfig("config.json")
+	conf, err := util.LoadConfig("/Users/tompaz/Documents/git/p2p-agent/config.json")
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
@@ -32,7 +33,7 @@ func main() {
 	}
 
 	// Start gRPC server
-	address := conf.ServerConfig.Host + ":" + conf.ServerConfig.Port
+	address := fmt.Sprintf("%s:%d", conf.ServerConfig.Host, conf.ServerConfig.Port)
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

@@ -28,7 +28,7 @@ func (n *FileSystemNode) Stop() error {
 }
 
 func (n *FileSystemNode) Register(server *grpc.Server) {
-	pb.RegisterFsNodeServiceServer(server, n)
+	pb.RegisterFsNodeServiceServer(server, &pb.UnimplementedFsNodeServiceServer{})
 }
 
 func (n *FileSystemNode) UploadFile(ctx context.Context, req *pb.UploadFileRequest) (*pb.UploadFileResponse, error) {

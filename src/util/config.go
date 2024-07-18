@@ -15,7 +15,7 @@ type NodeConfig struct {
 
 type ServerConfig struct {
 	Host string `json:"host"`
-	Port string `json:"port"`
+	Port int32  `json:"port"`
 }
 
 type Config struct {

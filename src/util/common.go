@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:src/util/common.go
 package util
-========
-package common
->>>>>>>> origin/master:src/common/utils.go
 
 import "github.com/google/uuid"
 

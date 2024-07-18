@@ -1,5 +1,8 @@
 {
-  "server_port": 5001,
+  "server_config" : {
+    "host": "127.0.0.1",
+    "port": 5001
+  },
   "bootstrap_node_timeout": 6,
   "bootstrap_peer_addrs": [],
   "log_level": "debug",
