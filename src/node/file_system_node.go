@@ -4,23 +4,18 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-
-	pb "github.com/tomp332/p2p-agent/src/pb"
+	"github.com/tomp332/p2p-agent/src/pb"
+	"github.com/tomp332/p2p-agent/src/utils"
 	"google.golang.org/grpc"
 )
 
 type FileSystemNode struct {
 	*BaseNode
+	pb.UnimplementedFsNodeServiceServer
 }
 
-func NewFileSystemNode(options *NodeOptions) *FileSystemNode {
-	baseNode := NewBaseNode(options)
-	return &FileSystemNode{BaseNode: baseNode}
-}
-
-func (n *FileSystemNode) Start() error {
-	// Implement start logic if necessary
-	return nil
+func NewFileSystemNode(nodeOptions *NodeOptions) *FileSystemNode {
+	return &FileSystemNode{BaseNode: NewBaseNode(nodeOptions)}
 }
 
 func (n *FileSystemNode) Stop() error {
@@ -29,6 +24,7 @@ func (n *FileSystemNode) Stop() error {
 
 func (n *FileSystemNode) Register(server *grpc.Server) {
 	pb.RegisterFsNodeServiceServer(server, &pb.UnimplementedFsNodeServiceServer{})
+	utils.Logger.Info().Str("nodeType", n.NodeType.String()).Msg("Node registered")
 }
 
 func (n *FileSystemNode) UploadFile(ctx context.Context, req *pb.UploadFileRequest) (*pb.UploadFileResponse, error) {
@@ -50,11 +46,6 @@ func (n *FileSystemNode) DownloadFile(ctx context.Context, request *pb.DownloadF
 }
 
 func (n *FileSystemNode) DeleteFile(ctx context.Context, request *pb.DeleteFileRequest) (*pb.DeleteFileResponse, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (n *FileSystemNode) mustEmbedUnimplementedFsNodeServiceServer() {
 	//TODO implement me
 	panic("implement me")
 }

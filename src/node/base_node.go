@@ -3,14 +3,22 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/tomp332/p2p-agent/src"
+	"github.com/tomp332/p2p-agent/src/utils"
 	"sync"
 	"time"
 
-	pb "github.com/tomp332/p2p-agent/src/pb"
-	"github.com/tomp332/p2p-agent/src/util"
+	"github.com/tomp332/p2p-agent/src/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
+
+type P2PNode interface {
+	Stop() error
+	Register(server *grpc.Server)
+	GetID() string
+	GetType() src.NodeType
+}
 
 type NodeOptions struct {
 	Storage              map[string][]byte
@@ -18,15 +26,10 @@ type NodeOptions struct {
 	BootstrapNodeTimeout time.Duration
 }
 
-type Node interface {
-	Start() error
-	Stop() error
-	Register(server *grpc.Server)
-}
-
 type BaseNode struct {
 	NodeOptions
 	ID             string
+	NodeType       src.NodeType
 	Context        context.Context
 	wg             sync.WaitGroup
 	ConnectedPeers map[string]*grpc.ClientConn
@@ -36,7 +39,7 @@ type BaseNode struct {
 func NewBaseNode(options *NodeOptions) *BaseNode {
 	ctx, cancel := context.WithCancel(context.Background())
 	node := &BaseNode{
-		ID:             util.GenerateRandomID(),
+		ID:             utils.GenerateRandomID(),
 		Context:        ctx,
 		NodeOptions:    *options,
 		wg:             sync.WaitGroup{},
@@ -72,4 +75,12 @@ func (n *BaseNode) Terminate() error {
 		conn.Close()
 	}
 	return nil
+}
+
+func (n *BaseNode) GetID() string {
+	return n.ID
+}
+
+func (n *BaseNode) GetType() src.NodeType {
+	return n.NodeType
 }

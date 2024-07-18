@@ -1,32 +1,27 @@
 package node
 
 import (
-	"fmt"
-
-	"github.com/tomp332/p2p-agent/src/util"
-	"google.golang.org/grpc"
+	"github.com/tomp332/p2p-agent/src/utils"
 )
 
-func InitializeNodes(configs []util.NodeConfig, server *grpc.Server) ([]Node, error) {
-	var nodes []Node
-	for _, conf := range configs {
+func InitializeNodes() error {
+	for _, conf := range utils.MainConfig.Nodes {
 		nodeOptions := &NodeOptions{
-			Storage:              conf.Storage,
+			Storage:              make(map[string][]byte),
 			BootstrapPeerAddrs:   conf.BootstrapPeerAddrs,
 			BootstrapNodeTimeout: conf.BootstrapNodeTimeout,
 		}
 
-		var n Node
+		var n P2PNode
 		switch conf.Type {
 		case "file_system":
 			n = NewFileSystemNode(nodeOptions)
 		default:
-			return nil, fmt.Errorf("unknown node type: %s", conf.Type)
+			utils.Logger.Error().Str("nodeType", conf.Type).Msgf("Unkown node type specified in configuration.")
+			return nil
 		}
-
-		n.Register(server)
-		nodes = append(nodes, n)
+		utils.Logger.Info().Str("nodeId", n.GetID()).Str("type", n.GetType().String()).Msgf("Created new node")
+		n.Register(MainAgentServer.BaseServer)
 	}
-
-	return nodes, nil
+	return nil
 }

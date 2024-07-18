@@ -1,4 +1,4 @@
-package util
+package utils
 
 import (
 	"encoding/json"
@@ -6,11 +6,14 @@ import (
 	"time"
 )
 
+var (
+	MainConfig *Config
+)
+
 type NodeConfig struct {
-	Type                 string            `json:"type"`
-	Storage              map[string][]byte `json:"storage"`
-	BootstrapPeerAddrs   []string          `json:"bootstrap_peer_addrs"`
-	BootstrapNodeTimeout time.Duration     `json:"bootstrap_node_timeout"`
+	Type                 string        `json:"type"`
+	BootstrapPeerAddrs   []string      `json:"bootstrap_peer_addrs"`
+	BootstrapNodeTimeout time.Duration `json:"bootstrap_node_timeout"`
 }
 
 type ServerConfig struct {
@@ -25,15 +28,13 @@ type Config struct {
 	LogLevel     string       `json:"log_level"`
 }
 
-func LoadConfig(file string) (*Config, error) {
+func LoadConfig(file string) error {
 	f, err := os.Open(file)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer f.Close()
-
-	var config Config
 	decoder := json.NewDecoder(f)
-	err = decoder.Decode(&config)
-	return &config, err
+	err = decoder.Decode(&MainConfig)
+	return err
 }

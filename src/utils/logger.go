@@ -1,4 +1,4 @@
-package util
+package utils
 
 import (
 	"fmt"
@@ -15,17 +15,17 @@ var (
 	Logger zerolog.Logger
 )
 
-func SetupLogger(config *Config) {
-	if config.LoggerMode == "dev" {
-		setupDevLogger(config)
-	} else if config.LoggerMode == "prod" {
+func SetupLogger() {
+	if MainConfig.LoggerMode == "dev" {
+		setupDevLogger()
+	} else if MainConfig.LoggerMode == "prod" {
 		setupProdLogger()
 	} else {
 		log.Fatal().Msg("Invalid logger mode specified.")
 	}
 }
 
-func setupDevLogger(config *Config) {
+func setupDevLogger() {
 	output := zerolog.ConsoleWriter{Out: colorable.NewColorableStdout(), TimeFormat: time.RFC3339}
 	output.FormatLevel = func(i interface{}) string {
 		return strings.ToUpper(fmt.Sprintf("|%-4s|", i))
@@ -34,8 +34,8 @@ func setupDevLogger(config *Config) {
 		return fmt.Sprintf("%s:", i)
 	}
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if config.LogLevel != "" {
-		if strings.ToUpper(config.LogLevel) == "DEBUG" {
+	if MainConfig.LogLevel != "" {
+		if strings.ToUpper(MainConfig.LogLevel) == "DEBUG" {
 			zerolog.SetGlobalLevel(zerolog.DebugLevel)
 		}
 	}
