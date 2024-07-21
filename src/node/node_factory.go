@@ -1,24 +1,28 @@
 package node
 
 import (
+	"github.com/tomp332/p2p-agent/src/node/p2p"
 	"github.com/tomp332/p2p-agent/src/utils"
 )
 
-func InitializeNodes() error {
+func InitializeP2PNodes() error {
 	for _, conf := range utils.MainConfig.Nodes {
-		nodeOptions := &NodeOptions{
-			Storage:              make(map[string][]byte),
-			BootstrapPeerAddrs:   conf.BootstrapPeerAddrs,
-			BootstrapNodeTimeout: conf.BootstrapNodeTimeout,
+		var n p2p.P2PNode
+		nodeOptions, err := utils.MapToStruct[p2p.P2PNodeConfig](conf)
+		if err != nil {
+			utils.Logger.Warn().Msgf("Error parsing node config: %v", err)
+			continue
 		}
-
-		var n P2PNode
-		switch conf.Type {
+		switch nodeOptions.Type {
 		case "file_system":
-			n = NewFileSystemNode(nodeOptions)
+			n = p2p.NewFileSystemNode(nodeOptions)
 		default:
-			utils.Logger.Error().Str("nodeType", conf.Type).Msgf("Unkown node type specified in configuration.")
+			utils.Logger.Error().Str("nodeType", nodeOptions.Type).Msgf("Unkown node type specified in configuration.")
 			return nil
+		}
+		if err = n.ParseNodeConfig(nodeOptions.ExtraConfig); err != nil {
+			utils.Logger.Warn().Msgf("Error parsing node config: %v", err)
+			continue
 		}
 		utils.Logger.Info().Str("nodeId", n.GetID()).Str("type", n.GetType().String()).Msgf("Created new node")
 		n.Register(MainAgentServer.BaseServer)

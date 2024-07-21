@@ -2,8 +2,10 @@ package node
 
 import (
 	"fmt"
+	"github.com/tomp332/p2p-agent/src/node/p2p"
 	"github.com/tomp332/p2p-agent/src/utils"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 	"sync"
@@ -45,6 +47,7 @@ func (s *GrpcAgentServer) Start() error {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+	reflection.Register(s.BaseServer)
 	go func() {
 		utils.Logger.Info().Msgf("gRPC server listening on %s", address)
 		if err := MainAgentServer.BaseServer.Serve(lis); err != nil {
@@ -54,7 +57,7 @@ func (s *GrpcAgentServer) Start() error {
 	return nil
 }
 
-func (s *GrpcAgentServer) Terminate(nodes []P2PNode) error {
+func (s *GrpcAgentServer) Terminate(nodes []p2p.P2PNode) error {
 	// Stop all nodes
 	for _, n := range nodes {
 		if err := n.Stop(); err != nil {

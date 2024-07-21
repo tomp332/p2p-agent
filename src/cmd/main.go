@@ -18,10 +18,11 @@ func main() {
 	utils.SetupLogger()
 
 	// Initialize nodes and register services
-	err = node.InitializeNodes()
+	err = node.InitializeP2PNodes()
 	if err != nil {
 		log.Fatalf("failed to initialize nodes: %v", err)
 	}
+
 	err = node.MainAgentServer.Start()
 	if err != nil {
 		utils.Logger.Error().Msgf("failed to start agent server: %v", err)

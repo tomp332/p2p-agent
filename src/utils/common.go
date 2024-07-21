@@ -1,6 +1,9 @@
 package utils
 
-import "github.com/google/uuid"
+import (
+	"encoding/json"
+	"github.com/google/uuid"
+)
 
 // GenerateRandomID random string generate
 func GenerateRandomID() string {
@@ -9,4 +12,17 @@ func GenerateRandomID() string {
 		Logger.Fatal().Err(err).Msg("Could not generate UUID")
 	}
 	return u.String()
+}
+
+// MapToStruct converts a map to a struct using JSON serialization
+func MapToStruct[T any](data map[string]interface{}) (*T, error) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	var result T
+	if err := json.Unmarshal(jsonData, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
 }

@@ -1,4 +1,4 @@
-package node
+package p2p
 
 import (
 	"context"
@@ -13,21 +13,27 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type ConfigurableP2PNode interface {
+	ParseNodeConfig(specificConfig map[string]interface{}) error
+}
+
 type P2PNode interface {
+	ConfigurableP2PNode
 	Stop() error
 	Register(server *grpc.Server)
 	GetID() string
 	GetType() src.NodeType
 }
 
-type NodeOptions struct {
-	Storage              map[string][]byte
-	BootstrapPeerAddrs   []string
-	BootstrapNodeTimeout time.Duration
+type P2PNodeConfig struct {
+	Type                 string                 `json:"type"`
+	BootstrapPeerAddrs   []string               `json:"bootstrap_peer_addrs"`
+	BootstrapNodeTimeout time.Duration          `json:"bootstrap_node_timeout"`
+	ExtraConfig          map[string]interface{} `json:"extra_config"`
 }
 
 type BaseNode struct {
-	NodeOptions
+	P2PNodeConfig
 	ID             string
 	NodeType       src.NodeType
 	Context        context.Context
@@ -36,12 +42,12 @@ type BaseNode struct {
 	cancelFunc     context.CancelFunc
 }
 
-func NewBaseNode(options *NodeOptions) *BaseNode {
+func NewBaseNode(options *P2PNodeConfig) *BaseNode {
 	ctx, cancel := context.WithCancel(context.Background())
 	node := &BaseNode{
 		ID:             utils.GenerateRandomID(),
 		Context:        ctx,
-		NodeOptions:    *options,
+		P2PNodeConfig:  *options,
 		wg:             sync.WaitGroup{},
 		ConnectedPeers: make(map[string]*grpc.ClientConn),
 		cancelFunc:     cancel,

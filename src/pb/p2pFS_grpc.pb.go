@@ -19,168 +19,203 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	FsNodeService_UploadFile_FullMethodName   = "/p2p_agent.FsNodeService/UploadFile"
-	FsNodeService_DownloadFile_FullMethodName = "/p2p_agent.FsNodeService/DownloadFile"
-	FsNodeService_DeleteFile_FullMethodName   = "/p2p_agent.FsNodeService/DeleteFile"
+	FileSystemNodeService_UploadFile_FullMethodName   = "/p2p_agent.FileSystemNodeService/UploadFile"
+	FileSystemNodeService_DownloadFile_FullMethodName = "/p2p_agent.FileSystemNodeService/DownloadFile"
+	FileSystemNodeService_DeleteFile_FullMethodName   = "/p2p_agent.FileSystemNodeService/DeleteFile"
 )
 
-// FsNodeServiceClient is the client API for FsNodeService service.
+// FileSystemNodeServiceClient is the client API for FileSystemNodeService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type FsNodeServiceClient interface {
-	UploadFile(ctx context.Context, in *UploadFileRequest, opts ...grpc.CallOption) (*UploadFileResponse, error)
+type FileSystemNodeServiceClient interface {
+	UploadFile(ctx context.Context, opts ...grpc.CallOption) (FileSystemNodeService_UploadFileClient, error)
 	DownloadFile(ctx context.Context, in *DownloadFileRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error)
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
 }
 
-type fsNodeServiceClient struct {
+type fileSystemNodeServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewFsNodeServiceClient(cc grpc.ClientConnInterface) FsNodeServiceClient {
-	return &fsNodeServiceClient{cc}
+func NewFileSystemNodeServiceClient(cc grpc.ClientConnInterface) FileSystemNodeServiceClient {
+	return &fileSystemNodeServiceClient{cc}
 }
 
-func (c *fsNodeServiceClient) UploadFile(ctx context.Context, in *UploadFileRequest, opts ...grpc.CallOption) (*UploadFileResponse, error) {
+func (c *fileSystemNodeServiceClient) UploadFile(ctx context.Context, opts ...grpc.CallOption) (FileSystemNodeService_UploadFileClient, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UploadFileResponse)
-	err := c.cc.Invoke(ctx, FsNodeService_UploadFile_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &FileSystemNodeService_ServiceDesc.Streams[0], FileSystemNodeService_UploadFile_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &fileSystemNodeServiceUploadFileClient{ClientStream: stream}
+	return x, nil
 }
 
-func (c *fsNodeServiceClient) DownloadFile(ctx context.Context, in *DownloadFileRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error) {
+type FileSystemNodeService_UploadFileClient interface {
+	Send(*UploadFileRequest) error
+	CloseAndRecv() (*UploadFileResponse, error)
+	grpc.ClientStream
+}
+
+type fileSystemNodeServiceUploadFileClient struct {
+	grpc.ClientStream
+}
+
+func (x *fileSystemNodeServiceUploadFileClient) Send(m *UploadFileRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *fileSystemNodeServiceUploadFileClient) CloseAndRecv() (*UploadFileResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(UploadFileResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *fileSystemNodeServiceClient) DownloadFile(ctx context.Context, in *DownloadFileRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DownloadFileResponse)
-	err := c.cc.Invoke(ctx, FsNodeService_DownloadFile_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, FileSystemNodeService_DownloadFile_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fsNodeServiceClient) DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error) {
+func (c *fileSystemNodeServiceClient) DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteFileResponse)
-	err := c.cc.Invoke(ctx, FsNodeService_DeleteFile_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, FileSystemNodeService_DeleteFile_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// FsNodeServiceServer is the server API for FsNodeService service.
-// All implementations must embed UnimplementedFsNodeServiceServer
+// FileSystemNodeServiceServer is the server API for FileSystemNodeService service.
+// All implementations must embed UnimplementedFileSystemNodeServiceServer
 // for forward compatibility
-type FsNodeServiceServer interface {
-	UploadFile(context.Context, *UploadFileRequest) (*UploadFileResponse, error)
+type FileSystemNodeServiceServer interface {
+	UploadFile(FileSystemNodeService_UploadFileServer) error
 	DownloadFile(context.Context, *DownloadFileRequest) (*DownloadFileResponse, error)
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
-	mustEmbedUnimplementedFsNodeServiceServer()
+	mustEmbedUnimplementedFileSystemNodeServiceServer()
 }
 
-// UnimplementedFsNodeServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedFsNodeServiceServer struct {
+// UnimplementedFileSystemNodeServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedFileSystemNodeServiceServer struct {
 }
 
-func (UnimplementedFsNodeServiceServer) UploadFile(context.Context, *UploadFileRequest) (*UploadFileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
+func (UnimplementedFileSystemNodeServiceServer) UploadFile(FileSystemNodeService_UploadFileServer) error {
+	return status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
 }
-func (UnimplementedFsNodeServiceServer) DownloadFile(context.Context, *DownloadFileRequest) (*DownloadFileResponse, error) {
+func (UnimplementedFileSystemNodeServiceServer) DownloadFile(context.Context, *DownloadFileRequest) (*DownloadFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DownloadFile not implemented")
 }
-func (UnimplementedFsNodeServiceServer) DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error) {
+func (UnimplementedFileSystemNodeServiceServer) DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteFile not implemented")
 }
-func (UnimplementedFsNodeServiceServer) mustEmbedUnimplementedFsNodeServiceServer() {}
+func (UnimplementedFileSystemNodeServiceServer) mustEmbedUnimplementedFileSystemNodeServiceServer() {}
 
-// UnsafeFsNodeServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to FsNodeServiceServer will
+// UnsafeFileSystemNodeServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to FileSystemNodeServiceServer will
 // result in compilation errors.
-type UnsafeFsNodeServiceServer interface {
-	mustEmbedUnimplementedFsNodeServiceServer()
+type UnsafeFileSystemNodeServiceServer interface {
+	mustEmbedUnimplementedFileSystemNodeServiceServer()
 }
 
-func RegisterFsNodeServiceServer(s grpc.ServiceRegistrar, srv FsNodeServiceServer) {
-	s.RegisterService(&FsNodeService_ServiceDesc, srv)
+func RegisterFileSystemNodeServiceServer(s grpc.ServiceRegistrar, srv FileSystemNodeServiceServer) {
+	s.RegisterService(&FileSystemNodeService_ServiceDesc, srv)
 }
 
-func _FsNodeService_UploadFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UploadFileRequest)
-	if err := dec(in); err != nil {
+func _FileSystemNodeService_UploadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(FileSystemNodeServiceServer).UploadFile(&fileSystemNodeServiceUploadFileServer{ServerStream: stream})
+}
+
+type FileSystemNodeService_UploadFileServer interface {
+	SendAndClose(*UploadFileResponse) error
+	Recv() (*UploadFileRequest, error)
+	grpc.ServerStream
+}
+
+type fileSystemNodeServiceUploadFileServer struct {
+	grpc.ServerStream
+}
+
+func (x *fileSystemNodeServiceUploadFileServer) SendAndClose(m *UploadFileResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *fileSystemNodeServiceUploadFileServer) Recv() (*UploadFileRequest, error) {
+	m := new(UploadFileRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(FsNodeServiceServer).UploadFile(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: FsNodeService_UploadFile_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FsNodeServiceServer).UploadFile(ctx, req.(*UploadFileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
-func _FsNodeService_DownloadFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _FileSystemNodeService_DownloadFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DownloadFileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FsNodeServiceServer).DownloadFile(ctx, in)
+		return srv.(FileSystemNodeServiceServer).DownloadFile(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FsNodeService_DownloadFile_FullMethodName,
+		FullMethod: FileSystemNodeService_DownloadFile_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FsNodeServiceServer).DownloadFile(ctx, req.(*DownloadFileRequest))
+		return srv.(FileSystemNodeServiceServer).DownloadFile(ctx, req.(*DownloadFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FsNodeService_DeleteFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _FileSystemNodeService_DeleteFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteFileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FsNodeServiceServer).DeleteFile(ctx, in)
+		return srv.(FileSystemNodeServiceServer).DeleteFile(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FsNodeService_DeleteFile_FullMethodName,
+		FullMethod: FileSystemNodeService_DeleteFile_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FsNodeServiceServer).DeleteFile(ctx, req.(*DeleteFileRequest))
+		return srv.(FileSystemNodeServiceServer).DeleteFile(ctx, req.(*DeleteFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// FsNodeService_ServiceDesc is the grpc.ServiceDesc for FsNodeService service.
+// FileSystemNodeService_ServiceDesc is the grpc.ServiceDesc for FileSystemNodeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var FsNodeService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "p2p_agent.FsNodeService",
-	HandlerType: (*FsNodeServiceServer)(nil),
+var FileSystemNodeService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "p2p_agent.FileSystemNodeService",
+	HandlerType: (*FileSystemNodeServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "UploadFile",
-			Handler:    _FsNodeService_UploadFile_Handler,
-		},
-		{
 			MethodName: "DownloadFile",
-			Handler:    _FsNodeService_DownloadFile_Handler,
+			Handler:    _FileSystemNodeService_DownloadFile_Handler,
 		},
 		{
 			MethodName: "DeleteFile",
-			Handler:    _FsNodeService_DeleteFile_Handler,
+			Handler:    _FileSystemNodeService_DeleteFile_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "UploadFile",
+			Handler:       _FileSystemNodeService_UploadFile_Handler,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "protos/p2pFS.proto",
 }

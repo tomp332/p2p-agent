@@ -3,7 +3,12 @@
     "host": "127.0.0.1",
     "port": 5001
   },
-  "nodes": [{"type":  "file_system"}],
+  "nodes": [
+    {"type":  "file_system",
+    "extra_config":  {
+    "max_file_size": 20
+    }}
+  ],
   "bootstrap_node_timeout": 6,
   "bootstrap_peer_addrs": [],
   "log_level": "debug",
