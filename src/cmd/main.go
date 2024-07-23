@@ -12,7 +12,7 @@ import (
 
 func main() {
 	// Load configuration
-	err := configs.LoadConfig("/Users/tompaz/Documents/git/p2p-agent/config.json")
+	err := configs.LoadConfig("/Users/tompaz/Documents/git/p2p_test-agent/config.json")
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}

@@ -1,16 +1,22 @@
 {
-  "server" : {
+  "server": {
     "host": "127.0.0.1",
     "port": 5001
   },
   "nodes": [
-    {"type":  "file_system"}
+    {
+      "node_configs": {
+        "type": "files",
+        "bootstrap_node_timeout": 6,
+        "bootstrap_peer_addrs": ["localhost:9999"]
+      },
+      "files_node_config": {
+        "storage": {
+          "root_directory": "/Users/tompaz/Documents/git/p2p-agent"
+        }
+      }
+    }
   ],
-  "storage": {
-    "root_directory": "/Users/tompaz/Documents/git/p2p-agent"
-  },
-  "bootstrap_node_timeout": 6,
-  "bootstrap_peer_addrs": [],
   "log_level": "debug",
   "logger_mode": "dev"
 }

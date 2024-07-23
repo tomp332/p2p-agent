@@ -17,12 +17,17 @@ var (
 )
 
 func SetupLogger() {
-	if configs.MainConfig.LoggerMode == "dev" {
-		setupDevLogger()
-	} else if configs.MainConfig.LoggerMode == "prod" {
+	if configs.MainConfig.LoggerMode == "" {
 		setupProdLogger()
 	} else {
-		log.Fatal().Msg("Invalid logger mode specified.")
+		switch configs.MainConfig.LoggerMode {
+		case "dev":
+			setupDevLogger()
+		case "prod":
+			setupProdLogger()
+		default:
+			log.Fatal().Msg("Invalid logger mode specified.")
+		}
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/tomp332/p2p-agent/src"
 	"github.com/tomp332/p2p-agent/src/utils"
 	"github.com/tomp332/p2p-agent/src/utils/configs"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -90,5 +91,56 @@ func (s *LocalStorage) Put(ctx context.Context, fileID string, dataChan <-chan [
 			return 0, err
 		}
 	}
+	utils.Logger.Info().Str("fileId", fileID).Msg("File uploaded successfully.")
 	return totalSize, nil
+}
+
+func (s *LocalStorage) Get(ctx context.Context, fileID string) (<-chan []byte, error) {
+	filePath := filepath.Join(s.options.RootDirectory, fileID)
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	dataChan := make(chan []byte)
+	go func() {
+		defer file.Close()
+		defer close(dataChan)
+
+		readBytes := make([]byte, 1024)
+		for {
+			select {
+			case <-ctx.Done():
+				utils.Logger.Info().Msg("New file to storage canceled.")
+				return
+			default:
+				numBytesRead, err := file.Read(readBytes)
+				if err != nil {
+					if err != io.EOF {
+						utils.Logger.Error().Err(err).Msg("Failed to read data from file")
+					}
+					return
+				}
+				if numBytesRead > 0 {
+					dataChan <- readBytes[:numBytesRead]
+				}
+				if numBytesRead < len(readBytes) {
+					utils.Logger.Debug().Msg("Read file from storage successfully.")
+					return
+				}
+			}
+		}
+	}()
+	return dataChan, nil
+}
+
+func (s *LocalStorage) Delete(ctx context.Context, fileID string) error {
+	filePath := filepath.Join(s.options.RootDirectory, fileID)
+	utils.Logger.Debug().Str("fileId", fileID).Msgf("Deleteing file from storage")
+	err := os.Remove(filePath)
+	if err != nil {
+		return ctx.Err()
+	}
+	utils.Logger.Info().Str("fileId", fileID).Msgf("File removed successfully from storage")
+	return nil
 }

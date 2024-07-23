@@ -46,7 +46,10 @@ func (s *GrpcAgentServer) Start() error {
 	address := fmt.Sprintf("%s:%d", configs.MainConfig.ServerConfig.Host, configs.MainConfig.ServerConfig.Port)
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		utils.Logger.Fatal().Err(err).
+			Str("address", configs.MainConfig.ServerConfig.Host).
+			Int32("port", configs.MainConfig.ServerConfig.Port).
+			Msg("Agent server failed to start listening on configured address and port.")
 	}
 	reflection.Register(s.BaseServer)
 	go func() {
