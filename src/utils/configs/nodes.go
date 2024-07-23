@@ -1,9 +1,11 @@
 package configs
 
-import "time"
+import (
+	"time"
+)
 
 type NodeConfigs struct {
-	BaseNodeConfigs P2PNodeBaseConfig `json:"node_configs"`
+	BaseNodeConfigs P2PNodeBaseConfig `json:"node_config"`
 	// All node type configurations
 	FilesNodeConfigs P2PFilesNodeConfig `json:"files_node_config"`
 }

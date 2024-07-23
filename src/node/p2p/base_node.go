@@ -4,27 +4,18 @@ import (
 	"context"
 	"fmt"
 	"github.com/tomp332/p2p-agent/src"
-	"github.com/tomp332/p2p-agent/src/pb"
 	"github.com/tomp332/p2p-agent/src/utils"
 	"github.com/tomp332/p2p-agent/src/utils/configs"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"sync"
 	"time"
 )
 
-type P2PNode interface {
-	Stop() error
-	Register(server *grpc.Server)
-	GetID() string
-	GetType() src.NodeType
-	ConnectToPeers()
-}
-
 type NodeConnection struct {
 	address        string
 	grpcConnection *grpc.ClientConn
-	client         any
+	nodeClients    *[]interface{}
 }
 
 type BaseNode struct {
@@ -32,35 +23,28 @@ type BaseNode struct {
 	ID             string
 	NodeType       src.NodeType
 	Context        context.Context
-	wg             sync.WaitGroup
 	ConnectedPeers []NodeConnection
+	Server         src.AgentGRPCServer
+	wg             sync.WaitGroup
 	cancelFunc     context.CancelFunc
 }
 
-func NewBaseNode(options *configs.P2PNodeBaseConfig) *BaseNode {
+func NewBaseNode(agentServer src.AgentGRPCServer, options *configs.P2PNodeBaseConfig) *BaseNode {
 	ctx, cancel := context.WithCancel(context.Background())
 	var id string
 	if id = options.ID; id == "" {
 		id = utils.GenerateRandomID()
 	}
-	node := &BaseNode{
+	n := &BaseNode{
 		ID:                id,
 		Context:           ctx,
 		P2PNodeBaseConfig: *options,
-		wg:                sync.WaitGroup{},
 		ConnectedPeers:    make([]NodeConnection, 0),
+		Server:            agentServer,
+		wg:                sync.WaitGroup{},
 		cancelFunc:        cancel,
 	}
-	return node
-}
-
-func (n *BaseNode) ConnectToBootstrapNodes() {
-	for _, nodeAddress := range n.BootstrapPeerAddrs {
-		_, err := n.connectToNode(nodeAddress)
-		if err != nil {
-			utils.Logger.Warn().Str("nodeAddress", nodeAddress).Err(err).Msg("")
-		}
-	}
+	return n
 }
 
 func (n *BaseNode) Terminate() error {
@@ -79,24 +63,32 @@ func (n *BaseNode) GetType() src.NodeType {
 	return n.NodeType
 }
 
-func (n *BaseNode) connectToNode(address string) (*grpc.ClientConn, error) {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	conn, err := grpc.NewClient(address, opts...)
-	if err != nil {
-		return nil, err
-	}
-	client := pb.NewNodeServiceClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), n.P2PNodeBaseConfig.BootstrapNodeTimeout*time.Second)
+func (n *BaseNode) ConnectToBootstrapPeers() error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	_, err = client.HealthCheck(ctx, &pb.HealthCheckRequest{})
-	if err != nil {
-		conn.Close()
-		return nil, fmt.Errorf("failed to connect to bootstrap node")
+	for _, address := range n.BootstrapPeerAddrs {
+		connection, err := n.Server.ClientConnection(address)
+		if err != nil {
+			utils.Logger.Warn().Err(err).Str("address", address).Msg("Failed to connect to peers")
+			continue
+		}
+		utils.Logger.Debug().Str("nodeType", n.NodeType.String()).Msg("Connecting to bootstrap peer")
+		healthClient := grpc_health_v1.NewHealthClient(connection)
+		res, err := healthClient.Check(ctx, &grpc_health_v1.HealthCheckRequest{})
+		if err != nil {
+			return fmt.Errorf(err.Error())
+		}
+		if res.Status == grpc_health_v1.HealthCheckResponse_SERVING {
+			utils.Logger.Debug().Str("healthStatus", res.Status.String()).Msgf("Bootstrap peer node is healthy.")
+		} else {
+			utils.Logger.Debug().Str("healthStatus", res.Status.String()).Msgf("Bootstrap peer node is not healthy.")
+			continue
+		}
+		n.ConnectedPeers = append(n.ConnectedPeers, NodeConnection{
+			address:        address,
+			grpcConnection: connection,
+		})
+		utils.Logger.Debug().Str("address", address).Msg("Successfully connected to bootstrap peer node")
 	}
-	n.ConnectedPeers = append(n.ConnectedPeers, NodeConnection{
-		address:        address,
-		grpcConnection: conn,
-	})
-	return conn, nil
+	return nil
 }

@@ -1,3 +1,4 @@
 *.idea
 temp/protocol/**
 *.data
+*config.json

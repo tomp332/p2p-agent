@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/tomp332/p2p-agent/src"
 	"github.com/tomp332/p2p-agent/src/utils"
@@ -31,6 +32,12 @@ func NewLocalStorage(options *configs.LocalStorageConfig) *LocalStorage {
 
 func (s *LocalStorage) Initialize() error {
 	newPath := filepath.Join(s.options.RootDirectory, src.LocalStorageDefaultDir)
+	if _, err := os.Stat(newPath); errors.Is(err, os.ErrNotExist) {
+		if err = os.Mkdir(newPath, os.ModePerm); err != nil {
+			utils.Logger.Error().Msgf("Failed to create default storage directory, %s", err.Error())
+			return err
+		}
+	}
 	s.options.RootDirectory = newPath
 	if s.options.MaxStorageSize == 0 {
 		s.options.MaxStorageSize = math.MaxInt64
