@@ -1,4 +1,4 @@
-package utils
+package configs
 
 import (
 	"encoding/json"
@@ -15,10 +15,11 @@ type ServerConfig struct {
 }
 
 type Config struct {
-	ServerConfig ServerConfig             `json:"server_config"`
-	Nodes        []map[string]interface{} `json:"nodes"`
-	LoggerMode   string                   `json:"logger_mode"`
-	LogLevel     string                   `json:"log_level"`
+	ServerConfig  ServerConfig             `json:"server"`
+	Nodes         []map[string]interface{} `json:"nodes"`
+	LoggerMode    string                   `json:"logger_mode"`
+	LogLevel      string                   `json:"log_level"`
+	StorageConfig LocalStorageConfig       `json:"storage"`
 }
 
 func LoadConfig(file string) error {

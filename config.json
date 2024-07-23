@@ -1,14 +1,14 @@
 {
-  "server_config" : {
+  "server" : {
     "host": "127.0.0.1",
     "port": 5001
   },
   "nodes": [
-    {"type":  "file_system",
-    "extra_config":  {
-    "max_file_size": 20
-    }}
+    {"type":  "file_system"}
   ],
+  "storage": {
+    "root_directory": "/Users/tompaz/Documents/git/p2p-agent"
+  },
   "bootstrap_node_timeout": 6,
   "bootstrap_peer_addrs": [],
   "log_level": "debug",

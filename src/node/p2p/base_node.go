@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/tomp332/p2p-agent/src"
 	"github.com/tomp332/p2p-agent/src/utils"
+	"github.com/tomp332/p2p-agent/src/utils/configs"
 	"sync"
 	"time"
 
@@ -25,15 +26,8 @@ type P2PNode interface {
 	GetType() src.NodeType
 }
 
-type P2PNodeConfig struct {
-	Type                 string                 `json:"type"`
-	BootstrapPeerAddrs   []string               `json:"bootstrap_peer_addrs"`
-	BootstrapNodeTimeout time.Duration          `json:"bootstrap_node_timeout"`
-	ExtraConfig          map[string]interface{} `json:"extra_config"`
-}
-
 type BaseNode struct {
-	P2PNodeConfig
+	configs.P2PNodeConfig
 	ID             string
 	NodeType       src.NodeType
 	Context        context.Context
@@ -42,10 +36,14 @@ type BaseNode struct {
 	cancelFunc     context.CancelFunc
 }
 
-func NewBaseNode(options *P2PNodeConfig) *BaseNode {
+func NewBaseNode(options *configs.P2PNodeConfig) *BaseNode {
 	ctx, cancel := context.WithCancel(context.Background())
+	var id string
+	if id = options.ID; id == "" {
+		id = utils.GenerateRandomID()
+	}
 	node := &BaseNode{
-		ID:             utils.GenerateRandomID(),
+		ID:             id,
 		Context:        ctx,
 		P2PNodeConfig:  *options,
 		wg:             sync.WaitGroup{},

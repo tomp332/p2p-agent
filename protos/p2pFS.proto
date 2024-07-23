@@ -14,15 +14,15 @@ service FileSystemNodeService {
 message UploadFileRequest {
   // File metadata
   string file_name = 2;
-  int64 chunk_index = 3;
   bytes chunk_data = 4;
 }
 
 // Message for file upload response
 message UploadFileResponse {
   string file_id = 1;
-  bool success = 2;
-  string message = 3;
+  double file_size =2;
+  bool success = 3;
+  string message = 4;
 }
 
 message DownloadFileRequest {

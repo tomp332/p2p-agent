@@ -5,6 +5,7 @@ import (
 	"github.com/mattn/go-colorable"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/tomp332/p2p-agent/src/utils/configs"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -16,9 +17,9 @@ var (
 )
 
 func SetupLogger() {
-	if MainConfig.LoggerMode == "dev" {
+	if configs.MainConfig.LoggerMode == "dev" {
 		setupDevLogger()
-	} else if MainConfig.LoggerMode == "prod" {
+	} else if configs.MainConfig.LoggerMode == "prod" {
 		setupProdLogger()
 	} else {
 		log.Fatal().Msg("Invalid logger mode specified.")
@@ -34,8 +35,8 @@ func setupDevLogger() {
 		return fmt.Sprintf("%s:", i)
 	}
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if MainConfig.LogLevel != "" {
-		if strings.ToUpper(MainConfig.LogLevel) == "DEBUG" {
+	if configs.MainConfig.LogLevel != "" {
+		if strings.ToUpper(configs.MainConfig.LogLevel) == "DEBUG" {
 			zerolog.SetGlobalLevel(zerolog.DebugLevel)
 		}
 	}

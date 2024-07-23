@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/tomp332/p2p-agent/src/node"
 	"github.com/tomp332/p2p-agent/src/utils"
+	"github.com/tomp332/p2p-agent/src/utils/configs"
 	"log"
 	"os"
 	"os/signal"
@@ -11,7 +12,7 @@ import (
 
 func main() {
 	// Load configuration
-	err := utils.LoadConfig("/Users/tompaz/Documents/git/p2p-agent/config.json")
+	err := configs.LoadConfig("/Users/tompaz/Documents/git/p2p-agent/config.json")
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}

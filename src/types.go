@@ -1,5 +1,7 @@
 package src
 
+import "sync"
+
 const (
 	FileSystemNodeType NodeType = iota
 	UnknownNodeType
@@ -14,4 +16,9 @@ func (nt NodeType) String() string {
 	default:
 		return "Unknown"
 	}
+}
+
+type AsyncOperation struct {
+	WG  sync.WaitGroup
+	err <-chan error
 }
