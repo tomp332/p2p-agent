@@ -3,23 +3,26 @@ name: CI
 on:
   push:
     branches:
-      - main
+      - '**'
   pull_request:
     branches:
-      - main
+      - '**'
 
 jobs:
-  build-and-test:
+  test:
+    name: Build and Test
     runs-on: ubuntu-latest
-
+    permissions:
+      pull-requests: write
+      contents: write
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.7
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
-        go-version: '^1.18' # Adjust the Go version as needed
+        go-version: '^1.22'
 
     - name: Install dependencies
       run: go mod download
@@ -27,8 +30,5 @@ jobs:
     - name: Run tests and generate coverage report
       run: make coverage
 
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v3
-      with:
-        name: coverage-report
-        path: coverage.html
+    - name: Go Beautiful HTML Coverage
+      uses: 'gha-common/go-beautiful-html-coverage@v1'

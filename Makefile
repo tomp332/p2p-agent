@@ -1,6 +1,6 @@
 CURRENT = $(shell pwd)
-COVERAGE_FILE = coverage.out
-COVERAGE_HTML = coverage.html
+COVERAGE_FILE = cover.out
+COVER_PACKAGE = ./src/...
 # Generate Go files from .proto files
 generate:
 	@echo "Generating Go files for all .proto files in the $(PROTO_DIR) directory..."
@@ -18,14 +18,12 @@ run: build
 
 test:
 	@echo "Running project tests..."
-	@go test ./tests/...
+	@go test ./tests/... -test.v
 
 coverage:
 	@echo "Running tests with coverage..."
-	@go test -coverprofile=$(COVERAGE_FILE) ./...
-	@go tool cover -html=$(COVERAGE_FILE) -o $(COVERAGE_HTML)
-	@echo "Coverage report generated: $(COVERAGE_HTML)"
+	@go test ./tests/... -v -coverpkg=$(COVER_PACKAGE) -coverprofile=$(COVERAGE_FILE)
 
 clean:
 	@echo "Cleaning up..."
-	@rm -rf $(BUILDDIR) $(COVERAGE_FILE) $(COVERAGE_HTML)
+	@rm -rf $(BUILDDIR) $(COVERAGE_FILE)
