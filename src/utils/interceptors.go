@@ -22,7 +22,7 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		st, _ := status.FromError(err)
 		Logger.Info().Msgf("RPC: %s, Duration: %d, Status: %s", info.FullMethod, duration, st.Code())
 		if err != nil {
-			Logger.Error().Msgf("Error: %v", err)
+			Logger.Error().Err(err)
 		}
 		return h, err
 	}
@@ -41,9 +41,9 @@ func StreamServerInterceptor() grpc.StreamServerInterceptor {
 		duration := time.Since(start)
 
 		st, _ := status.FromError(err)
-		Logger.Info().Msgf("RPC: %s, Duration: %, Status: %s", info.FullMethod, duration, st.Code())
+		Logger.Info().Msgf("RPC: %s, Duration: %d, Status: %s", info.FullMethod, duration, st.Code())
 		if err != nil {
-			Logger.Error().Msgf("Error: %v", err)
+			Logger.Error().Err(err)
 		}
 		return err
 	}

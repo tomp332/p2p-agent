@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/tomp332/p2p-agent/src/node/p2p"
 	"github.com/tomp332/p2p-agent/src/utils"
+	"github.com/tomp332/p2p-agent/src/utils/configs"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"log"
@@ -42,10 +43,13 @@ func NewP2pAgentServer() *GrpcAgentServer {
 
 func (s *GrpcAgentServer) Start() error {
 	// Start gRPC server
-	address := fmt.Sprintf("%s:%d", utils.MainConfig.ServerConfig.Host, utils.MainConfig.ServerConfig.Port)
+	address := fmt.Sprintf("%s:%d", configs.MainConfig.ServerConfig.Host, configs.MainConfig.ServerConfig.Port)
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		utils.Logger.Fatal().Err(err).
+			Str("address", configs.MainConfig.ServerConfig.Host).
+			Int32("port", configs.MainConfig.ServerConfig.Port).
+			Msg("Agent server failed to start listening on configured address and port.")
 	}
 	reflection.Register(s.BaseServer)
 	go func() {

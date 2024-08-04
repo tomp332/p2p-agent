@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package p2p_agent;
+
+option go_package = "./src/pb";
+
+service FilesNodeService {
+  rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
+  rpc DownloadFile(DownloadFileRequest) returns (stream DownloadFileResponse);
+  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
+  rpc BroadcastSearchFile(BroadcastRequest) returns (BroadcastResponse);
+}
+
+// Message for file upload request
+message UploadFileRequest {
+  // File metadata
+  string file_name = 1;
+  bytes chunk_data = 2;
+}
+
+// Message for file upload response
+message UploadFileResponse {
+  string file_id = 1;
+  double file_size =2;
+  bool success = 3;
+  string message = 4;
+}
+
+message DownloadFileRequest {
+  string fileId = 1;
+}
+
+message DownloadFileResponse {
+  bytes chunk = 1;
+  string file_id = 2;
+  bool exists = 3;
+}
+
+message DeleteFileRequest {
+  string fileId = 1;
+}
+
+message DeleteFileResponse {
+  string file_id = 1;
+}
+
+message BroadcastRequest{
+  string file_id = 1;
+}
+
+message BroadcastResponse {
+  string file_id=1;
+  bool exists=2;
+}
