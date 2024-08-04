@@ -5,7 +5,6 @@ import (
 	"context"
 	"github.com/tomp332/p2p-agent/src/node/p2p"
 	"github.com/tomp332/p2p-agent/src/pb"
-	"github.com/tomp332/p2p-agent/src/utils"
 	testUtils "github.com/tomp332/p2p-agent/tests/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -21,10 +20,8 @@ var (
 
 func TestMain(m *testing.M) {
 	testUtils.SetupConfig()
-	utils.SetupLogger()
-	utils.Logger.Info().Msg("Starting p2p_test file system tests.")
 	// Create temporary storage
-	localStorage, cleanupStorage := testUtils.CreateTempStorage(nil)
+	localStorage, cleanupStorage := testUtils.CreateTempStorage()
 	defer cleanupStorage()
 
 	// Initialize FilesNode with temporary storage

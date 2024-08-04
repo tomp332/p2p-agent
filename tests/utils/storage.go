@@ -4,13 +4,12 @@ import (
 	"github.com/tomp332/p2p-agent/src/storage"
 	"github.com/tomp332/p2p-agent/src/utils/configs"
 	"os"
-	"testing"
 )
 
-func CreateTempStorage(t *testing.T) (*storage.LocalStorage, func()) {
+func CreateTempStorage() (*storage.LocalStorage, func()) {
 	tempDir, err := os.MkdirTemp("", "storage_test")
 	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
+		panic(err)
 	}
 
 	storageConfig := &configs.LocalStorageConfig{
@@ -21,7 +20,7 @@ func CreateTempStorage(t *testing.T) (*storage.LocalStorage, func()) {
 	cleanup := func() {
 		err := os.RemoveAll(tempDir)
 		if err != nil {
-			t.Fatalf(err.Error())
+			panic(err)
 		}
 	}
 
