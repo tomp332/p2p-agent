@@ -2,14 +2,18 @@ package src
 
 import (
 	"context"
+	"github.com/tomp332/p2p-agent/src/utils/configs"
 )
 
 type P2PNoder interface {
 	Register()
-	GetID() string
-	GetType() NodeType
+	Options() *configs.P2PNodeBaseConfig
 	ConnectToBootstrapPeers() error
 }
+
+type P2PNodeClienter interface{}
+
+type P2PNodeConnection interface{}
 
 type Storage interface {
 	Initialize() error

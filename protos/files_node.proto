@@ -8,7 +8,7 @@ service FilesNodeService {
   rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
   rpc DownloadFile(DownloadFileRequest) returns (stream DownloadFileResponse);
   rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
-  rpc BroadcastSearchFile(BroadcastRequest) returns (BroadcastResponse);
+  rpc SearchFile(SearchFileRequest) returns (SearchFileResponse);
 }
 
 // Message for file upload request
@@ -44,11 +44,11 @@ message DeleteFileResponse {
   string file_id = 1;
 }
 
-message BroadcastRequest{
+message SearchFileRequest{
   string file_id = 1;
 }
 
-message BroadcastResponse {
+message SearchFileResponse {
   string file_id=1;
   bool exists=2;
 }

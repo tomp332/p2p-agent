@@ -1,17 +1,8 @@
 package src
 
 const (
-	FilesNodeType NodeType = iota
-	UnknownNodeType
+	FilesNodeType NodeType = "file"
+	BaseNodeType  NodeType = "base"
 )
 
-type NodeType int
-
-func (nt NodeType) String() string {
-	switch nt {
-	case FilesNodeType:
-		return "FilesNode"
-	default:
-		return "Unknown"
-	}
-}
+type NodeType string

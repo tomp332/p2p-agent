@@ -3,8 +3,9 @@ package test_p2p
 import (
 	"bytes"
 	"context"
-	"github.com/tomp332/p2p-agent/src"
-	"github.com/tomp332/p2p-agent/src/node"
+	"github.com/stretchr/testify/assert"
+	"github.com/tomp332/p2p-agent/src/node/p2p"
+	"github.com/tomp332/p2p-agent/src/node/p2p/file_node"
 	"github.com/tomp332/p2p-agent/src/pb"
 	testUtils "github.com/tomp332/p2p-agent/tests/utils"
 	"google.golang.org/protobuf/proto"
@@ -12,26 +13,26 @@ import (
 	"testing"
 )
 
+func initializeFileNode(t *testing.T) (*file_node.FilesNode, *testUtils.TestGRPCable) {
+	grpcTestServer := testUtils.NewTestAgentServer(t)
+	config := testUtils.FileNodeConfig(t)
+	baseNode := p2p.NewBaseNode(grpcTestServer, &config.BaseNodeConfigs)
+	fileNode := file_node.NewP2PFilesNode(baseNode, &config.FilesNodeConfigs)
+	fileNode.Register()
+	err := grpcTestServer.Start()
+	if err != nil {
+		t.Fatalf("Failed to start node: %v", err)
+	}
+	return fileNode, grpcTestServer
+}
+
 func baseFileClient(t *testing.T) pb.FilesNodeServiceClient {
 	_, server := initializeFileNode(t)
-	conn, err := server.ClientConnection("bufnet")
+	conn, err := server.ClientConnection(testUtils.TestServerHostname)
 	if err != nil {
 		t.Fatalf("Failed to create client connection: %v", err)
 	}
 	return pb.NewFilesNodeServiceClient(conn)
-}
-
-func initializeFileNode(t *testing.T) (src.P2PNoder, *testUtils.TestGRPCable) {
-	grpcTestServer := testUtils.NewTestAgentServer(t)
-	n, err := node.InitializeNode(grpcTestServer, testUtils.FileNodeConfig(t))
-	if err != nil {
-		t.Fatalf("Failed to initialize node: %v", err)
-	}
-	err = grpcTestServer.Start()
-	if err != nil {
-		t.Fatalf("Failed to start node: %v", err)
-	}
-	return n, grpcTestServer
 }
 
 func TestUploadFile(t *testing.T) {
@@ -160,12 +161,22 @@ func TestDeleteFile(t *testing.T) {
 	}
 }
 
-func TestFileNodeBootstrapPeers(t *testing.T) {
+func TestValidBootstrapPeer(t *testing.T) {
 	n, _ := initializeFileNode(t)
+	n.BootstrapPeerAddrs = []string{testUtils.TestServerHostname}
 	err := n.ConnectToBootstrapPeers()
 	if err != nil {
 		t.Fatalf("Failed to connect to bootstrap peers: %v", err)
 	}
+	assert.Equal(t, 1, len(n.ConnectedPeers), "There should be 1 connected peer.")
+}
+
+func TestNonValidBootstrapPeer(t *testing.T) {
+	n, _ := initializeFileNode(t)
+	n.BootstrapPeerAddrs = []string{"non-valid"}
+	n.BootstrapNodeTimeout = 3
+	err := n.ConnectToBootstrapPeers()
+	assert.NotNil(t, err, "Invalid bootstrap peer")
 }
 
 func getExpectedFileSize(chunks [][]byte) float64 {

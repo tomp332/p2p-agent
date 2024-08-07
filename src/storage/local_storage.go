@@ -102,13 +102,23 @@ func (s *LocalStorage) Put(ctx context.Context, fileID string, dataChan <-chan [
 	return totalSize, nil
 }
 
+func (s *LocalStorage) Search(fileID string) bool {
+	filePath := filepath.Join(s.options.RootDirectory, fileID)
+	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return true
+}
+
 func (s *LocalStorage) Get(ctx context.Context, fileID string) (<-chan []byte, error) {
 	filePath := filepath.Join(s.options.RootDirectory, fileID)
 	file, err := os.Open(filePath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			utils.Logger.Warn().Msgf("File %s does not exist.", fileID)
+		}
 		return nil, err
 	}
-
 	dataChan := make(chan []byte)
 	go func() {
 		defer file.Close()
@@ -118,7 +128,7 @@ func (s *LocalStorage) Get(ctx context.Context, fileID string) (<-chan []byte, e
 		for {
 			select {
 			case <-ctx.Done():
-				utils.Logger.Info().Msg("New file to storage canceled.")
+				utils.Logger.Info().Msg("Read file from storage canceled.")
 				return
 			default:
 				numBytesRead, err := file.Read(readBytes)
