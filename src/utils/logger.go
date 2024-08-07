@@ -5,7 +5,6 @@ import (
 	"github.com/mattn/go-colorable"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"github.com/tomp332/p2p-agent/src/utils/configs"
 	"path/filepath"
 	"strconv"
@@ -20,15 +19,11 @@ var (
 func SetupLogger() {
 	loggerMode := configs.MainConfig.LoggerMode
 	if loggerMode != "" {
-		switch viper.Get("logger_mode") {
-		case "":
-			setupProdLogger()
+		switch loggerMode {
 		case "dev":
 			setupDevLogger()
-		case "production":
-			setupProdLogger()
 		default:
-			log.Fatal().Msg("Invalid logger mode specified.")
+			setupProdLogger()
 		}
 	}
 }

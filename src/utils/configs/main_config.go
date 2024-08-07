@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	MainConfig *Config
+	MainConfig = AgentConfig{}
 )
 
 func LoadConfig(file string) {
@@ -20,7 +20,7 @@ func LoadConfig(file string) {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	} else if file != "" {
 		// If a config file was specified but not found, return an error
-		log.Fatalf("Config file not found: %s", file)
+		log.Fatalf("AgentConfig file not found: %s", file)
 	}
 	err := viper.Unmarshal(&MainConfig)
 	if err != nil {
@@ -28,9 +28,9 @@ func LoadConfig(file string) {
 	}
 }
 
-type Config struct {
-	ServerConfig ServerConfig  `mapstructure:"server"`
-	Nodes        []NodeConfigs `mapstructure:"nodes"`
-	LoggerMode   string        `mapstructure:"logger_mode"`
-	LogLevel     string        `mapstructure:"log_level"`
+type AgentConfig struct {
+	ServerConfig ServerConfig `mapstructure:"server"`
+	Nodes        AllNodesMap  `mapstructure:"nodes"`
+	LoggerMode   string       `mapstructure:"logger_mode"`
+	LogLevel     string       `mapstructure:"log_level"`
 }

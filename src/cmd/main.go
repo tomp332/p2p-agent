@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/tomp332/p2p-agent/src"
 	"github.com/tomp332/p2p-agent/src/node"
 	"github.com/tomp332/p2p-agent/src/utils"
@@ -18,25 +17,10 @@ var cfgFile string
 func init() {
 	// Define a persistent flag for the config file path
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path (default is $CWD/config.yaml)")
-	// Define other flags and bind them to viper
-	defineAndBindFlags(rootCmd)
-}
-
-func defineAndBindFlags(cmd *cobra.Command) {
-	cmd.Flags().String("host", "localhost", "Host address of the server")
-	cmd.Flags().Int("port", 8080, "Port on which the server runs")
-	cmd.Flags().String("storage-path", "./data", "Path to store node data")
-	cmd.Flags().String("logger-mode", "production", "Logger mode (e.g., development, production)")
-	cmd.Flags().String("log-level", "info", "Log level (e.g., debug, info, warn, error)")
-	cmd.Flags().StringSlice("nodes", []string{}, "List of node configurations (JSON encoded)")
-
-	// Bind the flags directly to viper
-	viper.BindPFlag("server.host", cmd.Flags().Lookup("host"))
-	viper.BindPFlag("server.port", cmd.Flags().Lookup("port"))
-	viper.BindPFlag("storage.storage_path", cmd.Flags().Lookup("storage-path"))
-	viper.BindPFlag("logger_mode", cmd.Flags().Lookup("logger-mode"))
-	viper.BindPFlag("log_level", cmd.Flags().Lookup("log-level"))
-	viper.BindPFlag("nodes", cmd.Flags().Lookup("nodes"))
+	rootCmd.PersistentFlags().StringVarP(&configs.MainConfig.LogLevel, "log-level", "l", "info", "Set log level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringVarP(&configs.MainConfig.LoggerMode, "logger-mode", "m", "console", "Logger mode (dev, production)")
+	rootCmd.PersistentFlags().StringVarP(&configs.MainConfig.ServerConfig.Host, "host", "", "localhost", "Hostname to host the server on")
+	rootCmd.PersistentFlags().Int32VarP(&configs.MainConfig.ServerConfig.Port, "port", "", 8080, "Port to listen on")
 }
 
 // rootCmd is the main command for the CLI

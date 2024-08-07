@@ -20,7 +20,7 @@ type NodeConnection struct {
 }
 
 type BaseNode struct {
-	configs.NodeConfigs
+	configs.NodeConfig
 	Server         src.AgentGRPCServer
 	ConnectedPeers []src.P2PNodeConnection
 	Context        context.Context
@@ -28,14 +28,14 @@ type BaseNode struct {
 	cancelFunc     context.CancelFunc
 }
 
-func NewBaseNode(options *configs.NodeConfigs) *BaseNode {
+func NewBaseNode(options *configs.NodeConfig) *BaseNode {
 	ctx, cancel := context.WithCancel(context.Background())
 	var id string
 	if id = options.ID; id == "" {
 		options.ID = utils.GenerateRandomID()
 	}
 	n := &BaseNode{
-		NodeConfigs:    *options,
+		NodeConfig:     *options,
 		ConnectedPeers: make([]src.P2PNodeConnection, 0),
 		Context:        ctx,
 		wg:             sync.WaitGroup{},
@@ -44,12 +44,10 @@ func NewBaseNode(options *configs.NodeConfigs) *BaseNode {
 	return n
 }
 
-func (n *BaseNode) Register(_ *grpc.Server) {
-	utils.Logger.Info().Str("nodeType", n.Type).Msg("Node registered")
-}
+func (n *BaseNode) Register(_ *grpc.Server) {}
 
-func (n *BaseNode) Options() *configs.NodeConfigs {
-	return &n.NodeConfigs
+func (n *BaseNode) Options() *configs.NodeConfig {
+	return &n.NodeConfig
 }
 
 func (n *BaseNode) Terminate() error {
@@ -84,11 +82,11 @@ func (n *BaseNode) ConnectToPeer(server src.AgentGRPCServer, address string, tim
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
 	defer cancel()
-	utils.Logger.Debug().Str("nodeType", n.Type).Msg("Connecting to bootstrap peer")
+	utils.Logger.Debug().Str("nodeType", n.Type.ToString()).Msg("Connecting to bootstrap peer")
 	healthClient := grpc_health_v1.NewHealthClient(connection)
 	res, err := healthClient.Check(ctx, &grpc_health_v1.HealthCheckRequest{})
 	if err != nil {
-		return nil, fmt.Errorf(err.Error())
+		return nil, err
 	}
 	if res.Status == grpc_health_v1.HealthCheckResponse_SERVING {
 		utils.Logger.Debug().Str("healthStatus", res.Status.String()).Msgf("Bootstrap peer node is healthy.")
