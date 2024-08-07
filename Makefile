@@ -2,7 +2,7 @@ CURRENT = $(shell pwd)
 COVERAGE_FILE = cover.out
 COVERAGE_HTML = cover.html
 COVER_PACKAGE = ./src/...
-# Generate Go files from .proto files
+# Generate Go p2p_file_node from .proto p2p_file_node
 generate:
 	@echo "Generating Go files for all .proto files in the $(PROTO_DIR) directory..."
 	@protoc -I=$(CURRENT) --go_out=$(CURRENT) --go-grpc_out=$(CURRENT)  $(CURRENT)/protos/*.proto

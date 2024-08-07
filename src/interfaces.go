@@ -3,12 +3,13 @@ package src
 import (
 	"context"
 	"github.com/tomp332/p2p-agent/src/utils/configs"
+	"google.golang.org/grpc"
 )
 
 type P2PNoder interface {
-	Register()
-	Options() *configs.P2PNodeBaseConfig
-	ConnectToBootstrapPeers() error
+	Register(server *grpc.Server)
+	Options() *configs.NodeConfigs
+	ConnectToBootstrapPeers(server AgentGRPCServer) error
 }
 
 type P2PNodeClienter interface{}
@@ -20,4 +21,11 @@ type Storage interface {
 	Put(ctx context.Context, fileID string, dataChan <-chan []byte) error
 	Delete(ctx context.Context, fileId string) error
 	Get(ctx *context.Context, fileId string, dataChan chan<- []byte) error
+}
+
+type AgentGRPCServer interface {
+	Start() error
+	Terminate() error
+	ClientConnection(address string) (*grpc.ClientConn, error)
+	ServerObj() *grpc.Server
 }

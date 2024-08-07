@@ -5,20 +5,16 @@ import (
 	"testing"
 )
 
-func BaseNodeConfig(t *testing.T) *configs.NodeConfigs {
-	return &configs.NodeConfigs{
-		BaseNodeConfigs: configs.P2PNodeBaseConfig{},
-	}
+func BaseNodeConfig() *configs.NodeConfigs {
+	return &configs.NodeConfigs{}
 }
 
 func FileNodeConfig(t *testing.T) *configs.NodeConfigs {
 	tempDir := t.TempDir()
 	return &configs.NodeConfigs{
-		BaseNodeConfigs: configs.P2PNodeBaseConfig{
-			Type:                 "file",
-			BootstrapNodeTimeout: 10,
-		},
-		FilesNodeConfigs: configs.P2PFilesNodeConfig{
+		Type:                 "file",
+		BootstrapNodeTimeout: 10,
+		P2PFilesNodeConfig: configs.P2PFilesNodeConfig{
 			Storage: configs.LocalStorageConfig{
 				RootDirectory: tempDir,
 			},

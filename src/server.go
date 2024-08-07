@@ -14,13 +14,6 @@ import (
 	"sync"
 )
 
-type AgentGRPCServer interface {
-	Start() error
-	Terminate() error
-	ClientConnection(address string) (*grpc.ClientConn, error)
-	ServerObj() *grpc.Server
-}
-
 type GRPCServer struct {
 	BaseServer *grpc.Server
 	Listener   net.Listener
