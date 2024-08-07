@@ -2,3 +2,4 @@
 temp/protocol/**
 *.data
 config.yaml
+*.out

@@ -2,6 +2,7 @@
 
 ![Go Version](https://img.shields.io/badge/go-1.22-blue)
 ![GitHub Actions](https://github.com/tomp332/p2p-agent/actions/workflows/ci.yaml/badge.svg)
+![Codecov Master](https://codecov.io/gh/tomp332/p2p-agent/branch/master/graph/badge.svg)
 
 ## Overview
 
