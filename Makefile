@@ -29,4 +29,4 @@ coverage:
 
 clean:
 	@echo "Cleaning up..."
-	@rm -rf $(BUILDDIR) $(COVERAGE_FILE)
+	@rm -rf $(BUILDDIR) $(COVERAGE_FILE) $(COVERAGE_HTML)
