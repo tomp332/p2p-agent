@@ -20,7 +20,7 @@ func StrToNodeType(str string) NodeType {
 }
 
 type AllNodesMap struct {
-	FileNode NodeConfig `mapstructure:"file-node"`
+	FileNode NodeConfig `mapstructure:"file-nodes"`
 }
 
 type NodeConfig struct {
@@ -29,10 +29,10 @@ type NodeConfig struct {
 	BootstrapNodeTimeout time.Duration `mapstructure:"bootstrap_node_timeout"`
 	Type                 NodeType
 
-	// All node type configurations
+	// All nodes type configurations
 	FilesNodeConfig `mapstructure:"file_config"`
 }
 
 type FilesNodeConfig struct {
-	Storage LocalStorageConfig `mapstructure:"storages"`
+	Storage LocalStorageConfig `mapstructure:"storage"`
 }

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package p2p_agent;
 
-option go_package = "./src/pb";
+option go_package = "./pkg/pb";
 
 service FilesNodeService {
   rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);

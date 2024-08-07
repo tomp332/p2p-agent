@@ -1,15 +1,14 @@
-package src
+package server
 
 import (
 	"fmt"
-	"github.com/tomp332/p2p-agent/src/utils"
-	"github.com/tomp332/p2p-agent/src/utils/configs"
+	"github.com/rs/zerolog/log"
+	"github.com/tomp332/p2p-agent/pkg/utils"
+	"github.com/tomp332/p2p-agent/pkg/utils/configs"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
-	"log"
 	"net"
 	"sync"
 )
@@ -32,7 +31,7 @@ func NewP2pAgentServer() *GRPCServer {
 	address := fmt.Sprintf("%s:%d", configs.MainConfig.ServerConfig.Host, configs.MainConfig.ServerConfig.Port)
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
-		utils.Logger.Fatal().Err(err).
+		log.Fatal().Err(err).
 			Str("address", configs.MainConfig.ServerConfig.Host).
 			Int32("port", configs.MainConfig.ServerConfig.Port).
 			Msg("Agent server failed to start listening on configured address and port.")
@@ -47,17 +46,6 @@ func (s *GRPCServer) Terminate() error {
 	return nil
 }
 
-func (s *GRPCServer) ClientConnection(address string) (*grpc.ClientConn, error) {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	conn, err := grpc.NewClient(address, opts...)
-	if err != nil {
-		utils.Logger.Warn().Err(err).Str("address", address).Msg("Failed to connect to peers")
-		return nil, err
-	}
-	return conn, nil
-}
-
 func (s *GRPCServer) ServerObj() *grpc.Server {
 	return s.BaseServer
 }
@@ -68,9 +56,9 @@ func (s *GRPCServer) Start() error {
 	grpc_health_v1.RegisterHealthServer(s.BaseServer, healthServer)
 	reflection.Register(s.BaseServer)
 	go func() {
-		utils.Logger.Info().Msgf("gRPC server listening on %s", s.Address)
+		log.Info().Msgf("gRPC server listening on %s", s.Address)
 		if err := s.BaseServer.Serve(s.Listener); err != nil {
-			log.Fatalf("failed to serve: %v", err)
+			log.Fatal().Msgf("failed to serve: %v", err)
 		}
 	}()
 	return nil

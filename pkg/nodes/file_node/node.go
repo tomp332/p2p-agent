@@ -7,27 +7,28 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/tomp332/p2p-agent/src"
-	"github.com/tomp332/p2p-agent/src/node/p2p"
-	"github.com/tomp332/p2p-agent/src/pb"
-	"github.com/tomp332/p2p-agent/src/utils"
+	"github.com/rs/zerolog/log"
+	"github.com/tomp332/p2p-agent/pkg/nodes"
+	"github.com/tomp332/p2p-agent/pkg/pb"
+	"github.com/tomp332/p2p-agent/pkg/storage"
+	"github.com/tomp332/p2p-agent/pkg/utils"
 	"google.golang.org/grpc"
 	"io"
 	"sync"
 )
 
 type FileNode struct {
-	*p2p.BaseNode
-	Storage src.Storage
+	*nodes.BaseNode
+	Storage storage.Storage
 	pb.UnimplementedFilesNodeServiceServer
 }
 
 type FileNodeConnection struct {
-	p2p.NodeConnection
+	nodes.NodeConnection
 	NodeClient FileNodeClient
 }
 
-func NewP2PFilesNode(baseNode *p2p.BaseNode, storage src.Storage) *FileNode {
+func NewP2PFilesNode(baseNode *nodes.BaseNode, storage storage.Storage) *FileNode {
 	n := &FileNode{BaseNode: baseNode, Storage: storage}
 	return n
 }
@@ -77,17 +78,17 @@ func (n *FileNode) DownloadFile(req *pb.DownloadFileRequest, stream pb.FilesNode
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
-		foundFileNode, err := n.searchFileInNetwork(req.FileId)
+		foundFileNode, err := n.SearchFileInNetwork(req.FileId)
 		if err != nil {
-			utils.Logger.Debug().Str("fileId", req.FileId).Msg("File not found in network, downloading from local")
-			// File not found in the network, retrieve from storages
+			log.Debug().Str("fileId", req.FileId).Msg("File not found in network, downloading from local")
+			// File not found in the network, retrieve from storage
 			dataChan, storageErr := n.Storage.Get(ctx, req.FileId)
 			if storageErr != nil {
 				return storageErr
 			}
 			mainDataChan = dataChan
 		} else {
-			utils.Logger.Debug().Str("fileId", req.FileId).Str("peer", foundFileNode.Address).Msg("File found in network, downloading from remote peer")
+			log.Debug().Str("fileId", req.FileId).Str("peer", foundFileNode.Address).Msg("File found in network, downloading from remote peer")
 			// Found the required file in the network, fetch from remote
 			mainDataChan, errChan = foundFileNode.NodeClient.DirectDownloadFile(ctx, req.GetFileId(), n.ID)
 		}
@@ -105,7 +106,7 @@ func (n *FileNode) DirectDownloadFile(req *pb.DirectDownloadFileRequest, stream 
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
-		utils.Logger.Debug().
+		log.Debug().
 			Str("fileId", req.GetFileId()).
 			Str("peerNodeId", req.GetNodeId()).
 			Msg("Direct download request received, downloading from local")
@@ -133,7 +134,7 @@ func (n *FileNode) Register(server *grpc.Server) {
 	pb.RegisterFilesNodeServiceServer(server, n)
 }
 
-func (n *FileNode) ConnectToBootstrapPeers(server src.AgentGRPCServer) error {
+func (n *FileNode) ConnectToBootstrapPeers(server *grpc.Server) error {
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(n.BootstrapPeerAddrs))
 
@@ -143,19 +144,19 @@ func (n *FileNode) ConnectToBootstrapPeers(server src.AgentGRPCServer) error {
 			defer wg.Done()
 			con, err := n.ConnectToPeer(server, address, n.NodeConfig.BootstrapNodeTimeout)
 			if err != nil {
-				utils.Logger.Error().Err(err).Str("peer", address).Msg("Failed to connect to bootstrap peer")
+				log.Error().Err(err).Str("peer", address).Msg("Failed to connect to bootstrap peer")
 				errChan <- err
 				return
 			}
 			client := pb.NewFilesNodeServiceClient(con)
 			n.ConnectedPeers = append(n.ConnectedPeers, FileNodeConnection{
-				NodeConnection: p2p.NodeConnection{
+				NodeConnection: nodes.NodeConnection{
 					Address:        address,
 					GrpcConnection: con,
 				},
 				NodeClient: *NewFileNodeClient(client, n.BootstrapNodeTimeout),
 			})
-			utils.Logger.Debug().Str("address", address).Msgf("Successfully connected to bootstrap node.")
+			log.Debug().Str("address", address).Msgf("Successfully connected to bootstrap nodes.")
 		}(address)
 	}
 
@@ -186,12 +187,11 @@ func createUniqueFileID(buffer *bytes.Buffer) (string, error) {
 	return hex.EncodeToString(fileHash[:]) + "-" + utils.GenerateRandomID(), nil
 }
 
-func (n *FileNode) searchFileInNetwork(fileId string) (FileNodeConnection, error) {
+func (n *FileNode) SearchFileInNetwork(fileId string) (FileNodeConnection, error) {
 	// Check if there are no connected peers
 	if len(n.ConnectedPeers) == 0 {
 		return FileNodeConnection{}, errors.New("no connected peers")
 	}
-
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -201,15 +201,15 @@ func (n *FileNode) searchFileInNetwork(fileId string) (FileNodeConnection, error
 	// Send search RPC call to all connected peers, to see if the network already contains this file.
 	for _, peer := range n.ConnectedPeers {
 		wg.Add(1)
-		go func(peer src.P2PNodeConnection) {
+		go func(peer nodes.P2PNodeConnection) {
 			defer wg.Done()
 			dynamicPeer := peer.(FileNodeConnection)
-			result, err := dynamicPeer.NodeClient.SearchFile(ctx, fileId)
+			fileFound, err := dynamicPeer.NodeClient.SearchFile(ctx, fileId)
 			if err != nil {
-				utils.Logger.Debug().Str("peer", dynamicPeer.Address).Msgf("Failed to send SearchFile RPC call for peer.")
+				log.Debug().Str("peer", dynamicPeer.Address).Msgf("Failed to send SearchFile RPC call for peer.")
 				return
 			}
-			if result {
+			if fileFound {
 				select {
 				case fileFoundChan <- dynamicPeer:
 					cancel() // Cancel the context to stop other goroutines
@@ -228,10 +228,13 @@ func (n *FileNode) searchFileInNetwork(fileId string) (FileNodeConnection, error
 	// Check for results
 	select {
 	case fileNode := <-fileFoundChan:
-		return fileNode, nil
+		if fileNode.Address != "" {
+			return fileNode, nil
+		}
 	case <-ctx.Done(): // If the context is done (canceled), return error
 		return FileNodeConnection{}, errors.New("file was not found in network")
 	}
+	return FileNodeConnection{}, errors.New("file was not found in network")
 }
 
 func (n *FileNode) handleFileDownload(ctx context.Context, fileId string, mainDataChan <-chan []byte, errChan <-chan error, stream interface{}) error {

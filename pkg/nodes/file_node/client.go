@@ -3,16 +3,16 @@ package file_node
 import (
 	"context"
 	"fmt"
-	"github.com/tomp332/p2p-agent/src"
-	"github.com/tomp332/p2p-agent/src/pb"
-	"github.com/tomp332/p2p-agent/src/utils"
+	"github.com/rs/zerolog/log"
+	"github.com/tomp332/p2p-agent/pkg/nodes"
+	"github.com/tomp332/p2p-agent/pkg/pb"
 	"io"
 	"os"
 	"time"
 )
 
 type FileNodeClient struct {
-	src.P2PNodeClienter
+	nodes.P2PNodeClienter
 	client         pb.FilesNodeServiceClient
 	requestTimeout time.Duration
 }
@@ -28,7 +28,7 @@ func (fc *FileNodeClient) SearchFile(ctx context.Context, fileId string) (bool, 
 	req := &pb.SearchFileRequest{FileId: fileId}
 	res, err := fc.client.SearchFile(ctx, req)
 	if err != nil {
-		utils.Logger.Error().Err(err).Msg("could not search file on current node.")
+		log.Error().Err(err).Msg("could not search file on current nodes.")
 		return false, err
 	}
 	return res.Exists, nil
@@ -111,7 +111,7 @@ func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-cha
 		// Open the file for reading
 		file, openErr := os.Open(filePath)
 		if openErr != nil {
-			utils.Logger.Error().Msgf("Failed to open file: %v", openErr)
+			log.Error().Msgf("Failed to open file: %v", openErr)
 			errChan <- openErr
 			return
 		}
@@ -120,7 +120,7 @@ func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-cha
 		// Create a new upload stream
 		stream, streamErr := fc.client.UploadFile(ctx)
 		if streamErr != nil {
-			utils.Logger.Error().Msgf("Failed to create upload stream: %v", streamErr)
+			log.Error().Msgf("Failed to create upload stream: %v", streamErr)
 			errChan <- streamErr
 			return
 		}
@@ -133,7 +133,7 @@ func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-cha
 				// End of file reached, close the stream
 				response, closeErr := stream.CloseAndRecv()
 				if closeErr != nil {
-					utils.Logger.Error().Msgf("Failed to close stream and receive response: %v", closeErr)
+					log.Error().Msgf("Failed to close stream and receive response: %v", closeErr)
 					errChan <- closeErr
 					return
 				}
@@ -143,7 +143,7 @@ func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-cha
 					return
 				}
 
-				utils.Logger.Debug().
+				log.Debug().
 					Str("fileId", response.GetFileId()).
 					Float64("fileSize", response.GetFileSize()).
 					Msgf("File uploaded successfully")
@@ -151,7 +151,7 @@ func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-cha
 			}
 
 			if readErr != nil {
-				utils.Logger.Error().Msgf("Failed to read file: %v", readErr)
+				log.Error().Msgf("Failed to read file: %v", readErr)
 				errChan <- readErr
 				return
 			}
@@ -161,7 +161,7 @@ func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-cha
 				ChunkData: buffer[:bytesRead],
 			})
 			if sendErr != nil {
-				utils.Logger.Error().Msgf("Failed to send file chunk: %v", sendErr)
+				log.Error().Msgf("Failed to send file chunk: %v", sendErr)
 				errChan <- sendErr
 				return
 			}

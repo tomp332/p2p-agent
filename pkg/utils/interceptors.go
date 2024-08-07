@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 	"time"
@@ -20,9 +21,9 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		duration := time.Since(start)
 
 		st, _ := status.FromError(err)
-		Logger.Info().Msgf("RPC: %s, Duration: %d, Status: %s", info.FullMethod, duration, st.Code())
+		log.Info().Msgf("RPC: %s, Duration: %d, Status: %s", info.FullMethod, duration, st.Code())
 		if err != nil {
-			Logger.Error().Err(err)
+			log.Error().Err(err)
 		}
 		return h, err
 	}
@@ -41,9 +42,9 @@ func StreamServerInterceptor() grpc.StreamServerInterceptor {
 		duration := time.Since(start)
 
 		st, _ := status.FromError(err)
-		Logger.Info().Msgf("RPC: %s, Duration: %d, Status: %s", info.FullMethod, duration, st.Code())
+		log.Info().Msgf("RPC: %s, Duration: %d, Status: %s", info.FullMethod, duration, st.Code())
 		if err != nil {
-			Logger.Error().Err(err)
+			log.Error().Err(err)
 		}
 		return err
 	}

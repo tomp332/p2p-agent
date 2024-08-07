@@ -5,30 +5,28 @@ import (
 	"github.com/mattn/go-colorable"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/tomp332/p2p-agent/src/utils/configs"
+	"github.com/tomp332/p2p-agent/pkg/utils/configs"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 )
 
-var (
-	Logger zerolog.Logger
-)
-
 func SetupLogger() {
+	var logger zerolog.Logger
 	loggerMode := configs.MainConfig.LoggerMode
 	if loggerMode != "" {
 		switch loggerMode {
 		case "dev":
-			setupDevLogger()
+			logger = setupDevLogger()
 		default:
-			setupProdLogger()
+			logger = setupProdLogger()
 		}
 	}
+	log.Logger = logger
 }
 
-func setupDevLogger() {
+func setupDevLogger() zerolog.Logger {
 	output := zerolog.ConsoleWriter{Out: colorable.NewColorableStdout(), TimeFormat: time.RFC3339}
 	output.FormatLevel = func(i interface{}) string {
 		return strings.ToUpper(fmt.Sprintf("|%-4s|", i))
@@ -42,10 +40,10 @@ func setupDevLogger() {
 			zerolog.SetGlobalLevel(zerolog.DebugLevel)
 		}
 	}
-	Logger = zerolog.New(output).With().Timestamp().Logger()
+	return zerolog.New(output).With().Timestamp().Logger()
 }
 
-func setupProdLogger() {
+func setupProdLogger() zerolog.Logger {
 	zerolog.TimeFieldFormat = time.RFC3339
 	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
 		return filepath.Base(file) + ":" + strconv.Itoa(line)
@@ -53,5 +51,5 @@ func setupProdLogger() {
 	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
 		return filepath.Base(file) + ":" + strconv.Itoa(line)
 	}
-	Logger = log.With().Caller().Logger()
+	return log.With().Caller().Logger()
 }
