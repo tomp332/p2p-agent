@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/tomp332/p2p-agent/src"
 	"github.com/tomp332/p2p-agent/src/node"
 	"github.com/tomp332/p2p-agent/src/utils"
 	"github.com/tomp332/p2p-agent/src/utils/configs"
@@ -17,17 +18,13 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 	utils.SetupLogger()
-
-	// Initialize nodes and register services
-	err = node.InitializeP2PNodes()
-	if err != nil {
-		log.Fatalf("failed to initialize nodes: %v", err)
-	}
-
-	err = node.MainAgentServer.Start()
-	if err != nil {
-		utils.Logger.Error().Msgf("failed to start agent server: %v", err)
-		return
+	grpcServer := src.NewP2pAgentServer()
+	nodes, err := node.InitializeNodes(grpcServer, &configs.MainConfig.Nodes)
+	for _, n := range nodes {
+		err = n.ConnectToBootstrapPeers()
+		if err != nil {
+			utils.Logger.Warn().Err(err).Msg("failed to connect to bootstrap node")
+		}
 	}
 	// Signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)

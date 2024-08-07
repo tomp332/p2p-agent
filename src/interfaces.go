@@ -1,8 +1,15 @@
-package storage
+package src
 
 import (
 	"context"
 )
+
+type P2PNoder interface {
+	Register()
+	GetID() string
+	GetType() NodeType
+	ConnectToBootstrapPeers() error
+}
 
 type Storage interface {
 	Initialize() error
