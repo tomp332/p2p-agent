@@ -6,7 +6,7 @@ on:
       - '**'
   pull_request:
     branches:
-      - master
+      - '**'
 
 jobs:
   test:
@@ -27,16 +27,22 @@ jobs:
         go mod tidy
         go install github.com/golang/mock/mockgen@v1.6.0
 
-    - name: Run tests and generate coverage report
+    - name: Run tests
       run:  |
         make mocks
         make test
-        
 
-#    - uses: codecov/codecov-action@v4
-#      with:
-#        fail_ci_if_error: true
-#        files: ./cover.out
-#        name: codecov-p2p-agent
-#        token: ${{ secrets.CODECOV_TOKEN }}
-#        verbose: true
+    - name: Run tests and generate coverage report
+      if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+      run:  |
+        make mocks
+        make coverage
+
+    - uses: codecov/codecov-action@v4
+      if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+      with:
+        fail_ci_if_error: true
+        files: ./cover.out
+        name: codecov-p2p-agent
+        token: ${{ secrets.CODECOV_TOKEN }}
+        verbose: true
