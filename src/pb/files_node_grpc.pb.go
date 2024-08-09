@@ -19,10 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	FilesNodeService_UploadFile_FullMethodName          = "/p2p_agent.FilesNodeService/UploadFile"
-	FilesNodeService_DownloadFile_FullMethodName        = "/p2p_agent.FilesNodeService/DownloadFile"
-	FilesNodeService_DeleteFile_FullMethodName          = "/p2p_agent.FilesNodeService/DeleteFile"
-	FilesNodeService_BroadcastSearchFile_FullMethodName = "/p2p_agent.FilesNodeService/BroadcastSearchFile"
+	FilesNodeService_UploadFile_FullMethodName   = "/p2p_agent.FilesNodeService/UploadFile"
+	FilesNodeService_DownloadFile_FullMethodName = "/p2p_agent.FilesNodeService/DownloadFile"
+	FilesNodeService_DeleteFile_FullMethodName   = "/p2p_agent.FilesNodeService/DeleteFile"
+	FilesNodeService_SearchFile_FullMethodName   = "/p2p_agent.FilesNodeService/SearchFile"
 )
 
 // FilesNodeServiceClient is the client API for FilesNodeService service.
@@ -32,7 +32,7 @@ type FilesNodeServiceClient interface {
 	UploadFile(ctx context.Context, opts ...grpc.CallOption) (FilesNodeService_UploadFileClient, error)
 	DownloadFile(ctx context.Context, in *DownloadFileRequest, opts ...grpc.CallOption) (FilesNodeService_DownloadFileClient, error)
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
-	BroadcastSearchFile(ctx context.Context, in *BroadcastRequest, opts ...grpc.CallOption) (*BroadcastResponse, error)
+	SearchFile(ctx context.Context, in *SearchFileRequest, opts ...grpc.CallOption) (*SearchFileResponse, error)
 }
 
 type filesNodeServiceClient struct {
@@ -121,10 +121,10 @@ func (c *filesNodeServiceClient) DeleteFile(ctx context.Context, in *DeleteFileR
 	return out, nil
 }
 
-func (c *filesNodeServiceClient) BroadcastSearchFile(ctx context.Context, in *BroadcastRequest, opts ...grpc.CallOption) (*BroadcastResponse, error) {
+func (c *filesNodeServiceClient) SearchFile(ctx context.Context, in *SearchFileRequest, opts ...grpc.CallOption) (*SearchFileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BroadcastResponse)
-	err := c.cc.Invoke(ctx, FilesNodeService_BroadcastSearchFile_FullMethodName, in, out, cOpts...)
+	out := new(SearchFileResponse)
+	err := c.cc.Invoke(ctx, FilesNodeService_SearchFile_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ type FilesNodeServiceServer interface {
 	UploadFile(FilesNodeService_UploadFileServer) error
 	DownloadFile(*DownloadFileRequest, FilesNodeService_DownloadFileServer) error
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
-	BroadcastSearchFile(context.Context, *BroadcastRequest) (*BroadcastResponse, error)
+	SearchFile(context.Context, *SearchFileRequest) (*SearchFileResponse, error)
 	mustEmbedUnimplementedFilesNodeServiceServer()
 }
 
@@ -155,8 +155,8 @@ func (UnimplementedFilesNodeServiceServer) DownloadFile(*DownloadFileRequest, Fi
 func (UnimplementedFilesNodeServiceServer) DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteFile not implemented")
 }
-func (UnimplementedFilesNodeServiceServer) BroadcastSearchFile(context.Context, *BroadcastRequest) (*BroadcastResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BroadcastSearchFile not implemented")
+func (UnimplementedFilesNodeServiceServer) SearchFile(context.Context, *SearchFileRequest) (*SearchFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchFile not implemented")
 }
 func (UnimplementedFilesNodeServiceServer) mustEmbedUnimplementedFilesNodeServiceServer() {}
 
@@ -236,20 +236,20 @@ func _FilesNodeService_DeleteFile_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FilesNodeService_BroadcastSearchFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BroadcastRequest)
+func _FilesNodeService_SearchFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchFileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FilesNodeServiceServer).BroadcastSearchFile(ctx, in)
+		return srv.(FilesNodeServiceServer).SearchFile(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FilesNodeService_BroadcastSearchFile_FullMethodName,
+		FullMethod: FilesNodeService_SearchFile_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FilesNodeServiceServer).BroadcastSearchFile(ctx, req.(*BroadcastRequest))
+		return srv.(FilesNodeServiceServer).SearchFile(ctx, req.(*SearchFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -266,8 +266,8 @@ var FilesNodeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _FilesNodeService_DeleteFile_Handler,
 		},
 		{
-			MethodName: "BroadcastSearchFile",
-			Handler:    _FilesNodeService_BroadcastSearchFile_Handler,
+			MethodName: "SearchFile",
+			Handler:    _FilesNodeService_SearchFile_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

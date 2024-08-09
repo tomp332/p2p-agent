@@ -11,10 +11,10 @@ type NodeConfigs struct {
 }
 
 type P2PNodeBaseConfig struct {
-	Type                 string        `json:"type"`
+	Type                 string        `json:"type" default:"base" validate:"type-validate"`
 	ID                   string        `json:"id"`
 	BootstrapPeerAddrs   []string      `json:"bootstrap_peer_addrs"`
-	BootstrapNodeTimeout time.Duration `json:"bootstrap_node_timeout"`
+	BootstrapNodeTimeout time.Duration `json:"bootstrap_node_timeout" default:"10"`
 }
 
 type P2PFilesNodeConfig struct {

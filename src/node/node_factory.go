@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/tomp332/p2p-agent/src"
 	"github.com/tomp332/p2p-agent/src/node/p2p"
+	"github.com/tomp332/p2p-agent/src/node/p2p/file_node"
 	"github.com/tomp332/p2p-agent/src/utils"
 	"github.com/tomp332/p2p-agent/src/utils/configs"
 )
@@ -18,6 +19,9 @@ func InitializeNodes(server src.AgentGRPCServer, configs *[]configs.NodeConfigs)
 			initializedNodes = append(initializedNodes, initNode)
 		}
 	}
+	if initializedNodes == nil {
+		return nil, errors.New("failed to initialize nodes")
+	}
 	err := server.Start()
 	if err != nil {
 		return nil, err
@@ -29,10 +33,17 @@ func InitializeNode(server src.AgentGRPCServer, config *configs.NodeConfigs) (sr
 	var n src.P2PNoder
 	baseNode := p2p.NewBaseNode(server, &config.BaseNodeConfigs)
 	switch config.BaseNodeConfigs.Type {
+	case "base":
+		n = baseNode
 	case "file":
-		n = p2p.NewP2PFilesNode(baseNode, &config.FilesNodeConfigs)
+		n = file_node.NewP2PFilesNode(baseNode, &config.FilesNodeConfigs)
 	default:
 		return nil, errors.New("invalid node type")
+	}
+	n.Register()
+	err := n.ConnectToBootstrapPeers()
+	if err != nil {
+		utils.Logger.Warn().Msgf("Bootstrapping process failed")
 	}
 	return n, nil
 }
