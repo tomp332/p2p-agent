@@ -24,7 +24,6 @@ test:
 coverage:
 	@echo "Running tests with coverage..."
 	@go test ./tests/... -v -coverpkg=$(COVER_PACKAGE) -coverprofile=$(COVERAGE_FILE)
-	@go tool cover -html=$(COVERAGE_FILE) -o $(COVERAGE_HTML)
 	@echo "Finished running tests and coverage"
 
 clean:
