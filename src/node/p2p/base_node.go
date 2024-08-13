@@ -20,7 +20,7 @@ type NodeConnection struct {
 }
 
 type BaseNode struct {
-	configs.P2PNodeBaseConfig
+	configs.NodeConfigs
 	Server         src.AgentGRPCServer
 	ConnectedPeers []src.P2PNodeConnection
 	Context        context.Context
@@ -28,29 +28,28 @@ type BaseNode struct {
 	cancelFunc     context.CancelFunc
 }
 
-func NewBaseNode(agentServer src.AgentGRPCServer, options *configs.P2PNodeBaseConfig) *BaseNode {
+func NewBaseNode(options *configs.NodeConfigs) *BaseNode {
 	ctx, cancel := context.WithCancel(context.Background())
 	var id string
 	if id = options.ID; id == "" {
 		options.ID = utils.GenerateRandomID()
 	}
 	n := &BaseNode{
-		P2PNodeBaseConfig: *options,
-		ConnectedPeers:    make([]src.P2PNodeConnection, 0),
-		Context:           ctx,
-		Server:            agentServer,
-		wg:                sync.WaitGroup{},
-		cancelFunc:        cancel,
+		NodeConfigs:    *options,
+		ConnectedPeers: make([]src.P2PNodeConnection, 0),
+		Context:        ctx,
+		wg:             sync.WaitGroup{},
+		cancelFunc:     cancel,
 	}
 	return n
 }
 
-func (n *BaseNode) Register() {
+func (n *BaseNode) Register(_ *grpc.Server) {
 	utils.Logger.Info().Str("nodeType", n.Type).Msg("Node registered")
 }
 
-func (n *BaseNode) Options() *configs.P2PNodeBaseConfig {
-	return &n.P2PNodeBaseConfig
+func (n *BaseNode) Options() *configs.NodeConfigs {
+	return &n.NodeConfigs
 }
 
 func (n *BaseNode) Terminate() error {
@@ -63,9 +62,9 @@ func (n *BaseNode) Terminate() error {
 	return nil
 }
 
-func (n *BaseNode) ConnectToBootstrapPeers() error {
+func (n *BaseNode) ConnectToBootstrapPeers(server src.AgentGRPCServer) error {
 	for _, address := range n.BootstrapPeerAddrs {
-		conn, err := n.ConnectToPeer(address, n.BootstrapNodeTimeout)
+		conn, err := n.ConnectToPeer(server, address, n.BootstrapNodeTimeout)
 		if err != nil {
 			return err
 		}
@@ -77,8 +76,8 @@ func (n *BaseNode) ConnectToBootstrapPeers() error {
 	return nil
 }
 
-func (n *BaseNode) ConnectToPeer(address string, timeout time.Duration) (*grpc.ClientConn, error) {
-	connection, err := n.Server.ClientConnection(address)
+func (n *BaseNode) ConnectToPeer(server src.AgentGRPCServer, address string, timeout time.Duration) (*grpc.ClientConn, error) {
+	connection, err := server.ClientConnection(address)
 	if err != nil {
 		utils.Logger.Warn().Err(err).Str("Address", address).Msg("Failed to connect to peers")
 		return nil, err

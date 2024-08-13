@@ -1,4 +1,4 @@
 *.idea
 temp/protocol/**
 *.data
-*config.json
+config.yaml
