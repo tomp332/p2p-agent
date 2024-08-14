@@ -25,9 +25,13 @@ mocks:
 	@echo "Finished generating test mocks"
 
 test:
+	@echo "Running tests"
+	@go test ./tests/... -v
+
+coverage:
 	@echo "Running tests with coverage"
 	@go test ./tests/... -v -coverpkg=$(COVER_PACKAGE) -coverprofile=$(COVERAGE_FILE)
-	@echo "Finished running tests and coverage"
+
 
 clean:
 	@echo "Cleaning up..."
