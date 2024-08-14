@@ -1,4 +1,4 @@
-package storage
+package storages
 
 import (
 	"context"
@@ -24,7 +24,7 @@ func NewLocalStorage(options *configs.LocalStorageConfig) *LocalStorage {
 	}
 	err := s.Initialize()
 	if err != nil {
-		utils.Logger.Error().Msgf("Failed to initialize local storage, %s", err.Error())
+		utils.Logger.Error().Msgf("Failed to initialize local storages, %s", err.Error())
 		return nil
 	}
 	return s
@@ -34,7 +34,7 @@ func (s *LocalStorage) Initialize() error {
 	newPath := filepath.Join(s.options.RootDirectory, src.LocalStorageDefaultDir)
 	if _, err := os.Stat(newPath); errors.Is(err, os.ErrNotExist) {
 		if err = os.Mkdir(newPath, os.ModePerm); err != nil {
-			utils.Logger.Error().Msgf("Failed to create default storage directory, %s", err.Error())
+			utils.Logger.Error().Msgf("Failed to create default storages directory, %s", err.Error())
 			return err
 		}
 	}
@@ -50,14 +50,14 @@ func (s *LocalStorage) Initialize() error {
 	if err := os.MkdirAll(newPath, os.ModePerm); err != nil {
 		utils.Logger.Error().
 			Str("rootDirectory", s.options.RootDirectory).
-			Msgf("Error initializing local file system storage. Failed to create root directory.")
+			Msgf("Error initializing local file system storages. Failed to create root directory.")
 		return err
 	}
 	utils.Logger.Debug().
 		Str("rootDirectory", s.options.RootDirectory).
 		Float64("maxFileSizeBytes", s.maxFileSizeBytes).
 		Float64("MaxStorageSize", s.options.MaxStorageSize).
-		Msg("Initialized local storage successfully.")
+		Msg("Initialized local storages successfully.")
 	return nil
 }
 
@@ -128,7 +128,7 @@ func (s *LocalStorage) Get(ctx context.Context, fileID string) (<-chan []byte, e
 		for {
 			select {
 			case <-ctx.Done():
-				utils.Logger.Info().Msg("Read file from storage canceled.")
+				utils.Logger.Info().Msg("Read file from storages canceled.")
 				return
 			default:
 				numBytesRead, err := file.Read(readBytes)
@@ -142,7 +142,7 @@ func (s *LocalStorage) Get(ctx context.Context, fileID string) (<-chan []byte, e
 					dataChan <- readBytes[:numBytesRead]
 				}
 				if numBytesRead < len(readBytes) {
-					utils.Logger.Debug().Msg("Read file from storage successfully.")
+					utils.Logger.Debug().Msg("Read file from storages successfully.")
 					return
 				}
 			}
@@ -153,11 +153,11 @@ func (s *LocalStorage) Get(ctx context.Context, fileID string) (<-chan []byte, e
 
 func (s *LocalStorage) Delete(ctx context.Context, fileID string) error {
 	filePath := filepath.Join(s.options.RootDirectory, fileID)
-	utils.Logger.Debug().Str("fileId", fileID).Msgf("Deleteing file from storage")
+	utils.Logger.Debug().Str("fileId", fileID).Msgf("Deleteing file from storages")
 	err := os.Remove(filePath)
 	if err != nil {
 		return ctx.Err()
 	}
-	utils.Logger.Info().Str("fileId", fileID).Msgf("File removed successfully from storage")
+	utils.Logger.Info().Str("fileId", fileID).Msgf("File removed successfully from storages")
 	return nil
 }

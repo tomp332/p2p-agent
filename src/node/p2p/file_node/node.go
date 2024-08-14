@@ -1,4 +1,4 @@
-package p2p_file_node
+package file_node
 
 import (
 	"bytes"
@@ -10,19 +10,16 @@ import (
 	"github.com/tomp332/p2p-agent/src"
 	"github.com/tomp332/p2p-agent/src/node/p2p"
 	"github.com/tomp332/p2p-agent/src/pb"
-	"github.com/tomp332/p2p-agent/src/storage"
 	"github.com/tomp332/p2p-agent/src/utils"
-	"github.com/tomp332/p2p-agent/src/utils/configs"
 	"google.golang.org/grpc"
 	"io"
 	"sync"
 )
 
-type FilesNode struct {
+type FileNode struct {
 	*p2p.BaseNode
-	Storage *storage.LocalStorage
+	Storage src.Storage
 	pb.UnimplementedFilesNodeServiceServer
-	config *configs.P2PFilesNodeConfig
 }
 
 type FileNodeConnection struct {
@@ -30,12 +27,12 @@ type FileNodeConnection struct {
 	NodeClient FileNodeClient
 }
 
-func NewP2PFilesNode(baseNode *p2p.BaseNode, nodeOptions *configs.P2PFilesNodeConfig) *FilesNode {
-	n := &FilesNode{BaseNode: baseNode, Storage: storage.NewLocalStorage(&nodeOptions.Storage)}
+func NewP2PFilesNode(baseNode *p2p.BaseNode, storage src.Storage) *FileNode {
+	n := &FileNode{BaseNode: baseNode, Storage: storage}
 	return n
 }
 
-func (n *FilesNode) UploadFile(stream pb.FilesNodeService_UploadFileServer) error {
+func (n *FileNode) UploadFile(stream pb.FilesNodeService_UploadFileServer) error {
 	var buffer bytes.Buffer
 	dataChan := make(chan []byte, 1024) // Buffered channel for file data
 
@@ -44,15 +41,14 @@ func (n *FilesNode) UploadFile(stream pb.FilesNodeService_UploadFileServer) erro
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
-			fileID, err := createUniqueFileID(&buffer)
+			fileID, _ := createUniqueFileID(&buffer)
 			close(dataChan)
-
-			fileSize, err := n.Storage.Put(ctx, fileID, dataChan)
-			if err != nil {
+			fileSize, storageErr := n.Storage.Put(ctx, fileID, dataChan)
+			if storageErr != nil {
 				return stream.SendAndClose(&pb.UploadFileResponse{
 					FileId:  fileID,
 					Success: false,
-					Message: fmt.Sprintf("Failed to store file: %v", err),
+					Message: fmt.Sprintf("Failed to store file: %v", storageErr),
 				})
 			}
 
@@ -72,10 +68,10 @@ func (n *FilesNode) UploadFile(stream pb.FilesNodeService_UploadFileServer) erro
 	}
 }
 
-func (n *FilesNode) DownloadFile(req *pb.DownloadFileRequest, stream pb.FilesNodeService_DownloadFileServer) error {
+func (n *FileNode) DownloadFile(req *pb.DownloadFileRequest, stream pb.FilesNodeService_DownloadFileServer) error {
 	ctx := stream.Context()
 	var mainDataChan <-chan []byte
-	var errChan <-chan error // Added error channel
+	var errChan <-chan error
 
 	select {
 	case <-ctx.Done():
@@ -83,45 +79,49 @@ func (n *FilesNode) DownloadFile(req *pb.DownloadFileRequest, stream pb.FilesNod
 	default:
 		foundFileNode, err := n.searchFileInNetwork(req.FileId)
 		if err != nil {
-			// File not found in the network, retrieve from storage
+			utils.Logger.Debug().Str("fileId", req.FileId).Msg("File not found in network, downloading from local")
+			// File not found in the network, retrieve from storages
 			dataChan, storageErr := n.Storage.Get(ctx, req.FileId)
 			if storageErr != nil {
 				return storageErr
 			}
 			mainDataChan = dataChan
 		} else {
+			utils.Logger.Debug().Str("fileId", req.FileId).Str("peer", foundFileNode.Address).Msg("File found in network, downloading from remote peer")
 			// Found the required file in the network, fetch from remote
-			mainDataChan, errChan = foundFileNode.NodeClient.DownloadFile(ctx, req.GetFileId())
+			mainDataChan, errChan = foundFileNode.NodeClient.DirectDownloadFile(ctx, req.GetFileId(), n.ID)
 		}
-
-		for {
-			select {
-			case chunk, ok := <-mainDataChan:
-				if !ok {
-					// Channel closed, end of data
-					return nil
-				}
-				if streamErr := stream.Send(&pb.DownloadFileResponse{
-					FileId: req.FileId,
-					Exists: true,
-					Chunk:  chunk,
-				}); streamErr != nil {
-					return streamErr
-				}
-			case downloadErr := <-errChan:
-				// Handle error from errChan (if any)
-				if downloadErr != nil {
-					return downloadErr
-				}
-			case <-ctx.Done():
-				// Handle context cancellation
-				return ctx.Err()
-			}
-		}
+		// Use the common handler function
+		return n.handleFileDownload(ctx, req.FileId, mainDataChan, errChan, stream)
 	}
 }
 
-func (n *FilesNode) DeleteFile(ctx context.Context, request *pb.DeleteFileRequest) (*pb.DeleteFileResponse, error) {
+func (n *FileNode) DirectDownloadFile(req *pb.DirectDownloadFileRequest, stream pb.FilesNodeService_DirectDownloadFileServer) error {
+	ctx := stream.Context()
+	var mainDataChan <-chan []byte
+	var errChan <-chan error
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		utils.Logger.Debug().
+			Str("fileId", req.GetFileId()).
+			Str("peerNodeId", req.GetNodeId()).
+			Msg("Direct download request received, downloading from local")
+		// Retrieve file from storage
+		dataChan, storageErr := n.Storage.Get(ctx, req.GetFileId())
+		if storageErr != nil {
+			return storageErr
+		}
+		mainDataChan = dataChan
+
+		// Use the common handler function
+		return n.handleFileDownload(ctx, req.GetFileId(), mainDataChan, errChan, stream)
+	}
+}
+
+func (n *FileNode) DeleteFile(ctx context.Context, request *pb.DeleteFileRequest) (*pb.DeleteFileResponse, error) {
 	err := n.Storage.Delete(ctx, request.GetFileId())
 	if err != nil {
 		return nil, err
@@ -129,12 +129,11 @@ func (n *FilesNode) DeleteFile(ctx context.Context, request *pb.DeleteFileReques
 	return &pb.DeleteFileResponse{FileId: request.GetFileId()}, nil
 }
 
-func (n *FilesNode) Register(server *grpc.Server) {
+func (n *FileNode) Register(server *grpc.Server) {
 	pb.RegisterFilesNodeServiceServer(server, n)
-	utils.Logger.Info().Str("nodeType", n.Type).Msg("Node registered")
 }
 
-func (n *FilesNode) ConnectToBootstrapPeers(server src.AgentGRPCServer) error {
+func (n *FileNode) ConnectToBootstrapPeers(server src.AgentGRPCServer) error {
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(n.BootstrapPeerAddrs))
 
@@ -142,9 +141,9 @@ func (n *FilesNode) ConnectToBootstrapPeers(server src.AgentGRPCServer) error {
 		wg.Add(1)
 		go func(address string) {
 			defer wg.Done()
-			con, err := n.ConnectToPeer(server, address, n.NodeConfigs.BootstrapNodeTimeout)
+			con, err := n.ConnectToPeer(server, address, n.NodeConfig.BootstrapNodeTimeout)
 			if err != nil {
-				utils.Logger.Error().Err(err).Msg("Failed to connect to bootstrap peer")
+				utils.Logger.Error().Err(err).Str("peer", address).Msg("Failed to connect to bootstrap peer")
 				errChan <- err
 				return
 			}
@@ -169,7 +168,7 @@ func (n *FilesNode) ConnectToBootstrapPeers(server src.AgentGRPCServer) error {
 	return nil
 }
 
-func (n *FilesNode) SearchFile(_ context.Context, request *pb.SearchFileRequest) (*pb.SearchFileResponse, error) {
+func (n *FileNode) SearchFile(_ context.Context, request *pb.SearchFileRequest) (*pb.SearchFileResponse, error) {
 	response := &pb.SearchFileResponse{
 		FileId: request.GetFileId(),
 		Exists: true,
@@ -187,7 +186,7 @@ func createUniqueFileID(buffer *bytes.Buffer) (string, error) {
 	return hex.EncodeToString(fileHash[:]) + "-" + utils.GenerateRandomID(), nil
 }
 
-func (n *FilesNode) searchFileInNetwork(fileId string) (FileNodeConnection, error) {
+func (n *FileNode) searchFileInNetwork(fileId string) (FileNodeConnection, error) {
 	// Check if there are no connected peers
 	if len(n.ConnectedPeers) == 0 {
 		return FileNodeConnection{}, errors.New("no connected peers")
@@ -232,5 +231,48 @@ func (n *FilesNode) searchFileInNetwork(fileId string) (FileNodeConnection, erro
 		return fileNode, nil
 	case <-ctx.Done(): // If the context is done (canceled), return error
 		return FileNodeConnection{}, errors.New("file was not found in network")
+	}
+}
+
+func (n *FileNode) handleFileDownload(ctx context.Context, fileId string, mainDataChan <-chan []byte, errChan <-chan error, stream interface{}) error {
+	for {
+		select {
+		case chunk, ok := <-mainDataChan:
+			if !ok {
+				// Channel closed, end of data
+				return nil
+			}
+
+			// Use type switch to handle the specific stream type
+			switch s := stream.(type) {
+			case pb.FilesNodeService_DownloadFileServer:
+				if streamErr := s.Send(&pb.DownloadFileResponse{
+					FileId: fileId,
+					Exists: true,
+					Chunk:  chunk,
+				}); streamErr != nil {
+					return streamErr
+				}
+			case pb.FilesNodeService_DirectDownloadFileServer:
+				if streamErr := s.Send(&pb.DirectDownloadFileResponse{
+					FileId: fileId,
+					Exists: true,
+					Chunk:  chunk,
+				}); streamErr != nil {
+					return streamErr
+				}
+			default:
+				return fmt.Errorf("unsupported stream type")
+			}
+
+		case downloadErr := <-errChan:
+			// Handle error from errChan (if any)
+			if downloadErr != nil {
+				return downloadErr
+			}
+		case <-ctx.Done():
+			// Handle context cancellation
+			return ctx.Err()
+		}
 	}
 }
