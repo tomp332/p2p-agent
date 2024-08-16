@@ -35,18 +35,16 @@ type FileNodeConnection struct {
 }
 
 func NewP2PFilesNode(baseNode *nodes.BaseNode, storage storage.Storage) *FileNode {
-	baseNode.ProtectedRoutes = []string{
+	baseNode.ProtectedRoutes = []string{"" +
 		"/p2p_agent.FilesNodeService/DirectDownloadFile",
-		"/p2p_agent.FilesNodeService/UploadFile",
 	}
 	n := &FileNode{
 		BaseNode: baseNode,
 		Storage:  storage,
 	}
 	n.createAuthInformation()
-	fileNodeAuthInterceptor := interceptors.NewAuthInterceptor(n.AuthManager, baseNode.ProtectedRoutes)
+	fileNodeAuthInterceptor := interceptors.NewAuthInterceptor(n.JwtManager, baseNode.ProtectedRoutes)
 	n.AddUnaryInterceptors(fileNodeAuthInterceptor.Unary())
-	n.AddStreamInterceptors(fileNodeAuthInterceptor.Stream())
 	return n
 }
 
@@ -151,7 +149,6 @@ func (n *FileNode) DeleteFile(ctx context.Context, request *pb.DeleteFileRequest
 
 func (n *FileNode) Register(server *server.GRPCServer) {
 	server.AddUnaryInterceptors(n.UnaryInterceptors...)
-	server.AddStreamInterceptors(n.StreamInterceptors...)
 	server.ServiceRegistrars[n.Type] = func(server *grpc.Server) {
 		pb.RegisterFilesNodeServiceServer(server, n)
 	}
@@ -216,7 +213,7 @@ func (n *FileNode) Authenticate(_ context.Context, req *pb.AuthenticateRequest) 
 		log.Warn().Str("password", req.GetPassword()).Msg("Invalid password provided for node authentication")
 		return nil, errors.New("invalid username/password")
 	}
-	token, err := n.AuthManager.Generate(n.Auth.Username, configs.FilesNodeType)
+	token, err := n.JwtManager.Generate(n.Auth.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -328,5 +325,5 @@ func (n *FileNode) createAuthInformation() {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(n.Auth.Password), bcrypt.DefaultCost)
 	// Make sure its stored decoded.
 	n.Auth.Password = string(hashedPassword)
-	n.AuthManager = managers.NewJWTManager(n.Auth.JwtSecret, 24*time.Hour)
+	n.JwtManager = managers.NewJWTManager(n.Auth.JwtSecret, 24*time.Hour)
 }
