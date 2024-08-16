@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -33,22 +34,53 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		configs.LoadConfig(cfgFile)
 		utils.SetupLogger()
+
+		// Create a cancellable context
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		// Initialize the gRPC server and nodes
 		grpcServer := server.NewP2pAgentServer()
-		_, err := factory.InitializeNodes(grpcServer, &configs.MainConfig.Nodes)
+		runningNodes, err := factory.InitializeNodes(ctx, grpcServer, &configs.MainConfig.Nodes)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to initialize nodes")
 			return
 		}
+
+		// Start the gRPC server
 		err = grpcServer.Setup()
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to setup grpc server")
+			return
+		}
 		err = grpcServer.Start()
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to star grpc server")
+			log.Fatal().Err(err).Msg("Failed to start grpc server")
+			return
 		}
+
 		// Signal handling for graceful shutdown
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-		sig := <-sigChan
-		log.Debug().Msgf("Received signal %s, exiting gracefully...", sig)
+
+		go func() {
+			sig := <-sigChan
+			log.Debug().Msgf("Received signal %s, exiting gracefully...", sig)
+			cancel() // Trigger the cancellation of the context
+		}()
+
+		// Block until context is cancelled
+		<-ctx.Done()
+
+		// Terminate all running nodes gracefully
+		for _, node := range runningNodes {
+			err := node.Terminate()
+			if err != nil {
+				log.Error().Err(err).Str("nodeType", node.Options().Type.ToString()).Msg("Failed to terminate node")
+				continue
+			}
+			log.Debug().Str("nodeType", node.Options().Type.ToString()).Msg("Node terminated")
+		}
 	},
 }
 

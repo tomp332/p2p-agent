@@ -17,7 +17,8 @@ type P2PNoder interface {
 	ServiceRegister(server *server.GRPCServer)
 	InterceptorsRegister(server *server.GRPCServer)
 	Options() *configs.NodeConfig
-	ConnectToBootstrapPeers() error
+	ConnectToBootstrapPeers()
+	Terminate() error
 }
 
 type PeerConnection struct {
@@ -34,12 +35,17 @@ type BaseNode struct {
 	UnaryInterceptors  []grpc.UnaryServerInterceptor
 	StreamInterceptors []grpc.StreamServerInterceptor
 	AuthManager        managers.AuthenticationManager
+	MainContext        context.Context
+	MainContextCancel  context.CancelFunc
 }
 
-func NewBaseNode(options *configs.NodeConfig) *BaseNode {
+func NewBaseNode(options *configs.NodeConfig, mainCtx context.Context) *BaseNode {
+	ctx, cancel := context.WithCancel(mainCtx)
 	n := &BaseNode{
-		NodeConfig:     *options,
-		ConnectedPeers: make(map[string]PeerConnection),
+		NodeConfig:        *options,
+		MainContext:       ctx,
+		MainContextCancel: cancel,
+		ConnectedPeers:    make(map[string]PeerConnection),
 	}
 	return n
 }
@@ -53,6 +59,7 @@ func (n *BaseNode) Options() *configs.NodeConfig {
 }
 
 func (n *BaseNode) Terminate() error {
+	n.MainContextCancel()
 	return nil
 }
 
