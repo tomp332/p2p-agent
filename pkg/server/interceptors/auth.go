@@ -12,16 +12,16 @@ import (
 )
 
 type AuthInterceptor struct {
-	authManager         managers.AuthenticationManager
-	nodeProtectedRoutes []string
+	jwtManager           *managers.JWTManager
+	nodeAccessibleRoutes []string
 }
 
-func NewAuthInterceptor(jwtManager managers.AuthenticationManager, nodeAccessibleRoutes []string) *AuthInterceptor {
+func NewAuthInterceptor(jwtManager *managers.JWTManager, nodeAccessibleRoutes []string) *AuthInterceptor {
 	return &AuthInterceptor{jwtManager, nodeAccessibleRoutes}
 }
 
 func (interceptor *AuthInterceptor) authorize(ctx context.Context, method string) error {
-	if !slices.Contains(interceptor.nodeProtectedRoutes, method) {
+	if !slices.Contains(interceptor.nodeAccessibleRoutes, method) {
 		// everyone can access
 		return nil
 	}
@@ -36,16 +36,11 @@ func (interceptor *AuthInterceptor) authorize(ctx context.Context, method string
 	}
 
 	accessToken := values[0]
-	claims, err := interceptor.authManager.Verify(accessToken)
+	claims, err := interceptor.jwtManager.Verify(accessToken)
 	if err != nil {
 		return status.Errorf(codes.Unauthenticated, "access token is invalid: %v", err)
 	}
-	userToken := claims.(*managers.PeerToken)
-	if userToken.Username != "" {
-		// Authorized
-		log.Debug().Str("nodeType", userToken.NodeType.ToString()).Msgf("Granted access to node route.")
-		return nil
-	}
+	log.Debug().Str("nodeType", claims.NodeType.ToString()).Msgf("Granted access to node route.")
 	return status.Error(codes.PermissionDenied, "no permission to access this RPC")
 }
 
