@@ -5,7 +5,7 @@ MAIN_PACKAGE = ./pkg
 COVER_PACKAGE = ./$(MAIN_PACKAGE)/...
 MOCK_PACKAGE = ./tests/mocks
 
-# Generate Go fsNode from .proto fsNode
+# Generate Go file_node from .proto file_node
 generate:
 	@echo "Generating Go files for all .proto files in the $(PROTO_DIR) directory..."
 	@protoc -I=$(CURRENT) --go_out=$(CURRENT) --go-grpc_out=$(CURRENT)  $(CURRENT)/protos/*.proto
@@ -23,12 +23,12 @@ run: build
 mocks:
 	@echo "Generating test mocks"
 	@rm -rf $(MOCK_PACKAGE)
-	@mockgen -source=./pkg/pb/files_node_grpc.pb.go -destination ./tests/mocks/mock_fsNodeService.go --package mocks
-	@mockgen -source=./pkg/storage/storage.go -destination ./tests/mocks/mock_storage.go --package mocks
-	@mockgen -source=./tests/interfaces/fsNodeClient.go -destination ./tests/mocks/mock_fsNodeClient.go --package mocks
+	@mockgen -source=$(MAIN_PACKAGE)/nodes/base_node.go -destination=$(MOCK_PACKAGE)/mock_base_node.go -package=mocks
+	@mockgen -source=$(MAIN_PACKAGE)/storage/storage.go -destination=$(MOCK_PACKAGE)/mock_storage.go -package=mocks
+	@mockgen -source=$(MAIN_PACKAGE)/pb/files_node_grpc.pb.go -destination=$(MOCK_PACKAGE)/mock_files_node_service.go -package=mocks
 	@echo "Finished generating test mocks"
 
-tests:
+test:
 	@echo "Running tests"
 	@gotestsum --format testname ./tests/... -v
 
