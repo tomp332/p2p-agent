@@ -1,8 +1,10 @@
 CURRENT = $(shell pwd)
 COVERAGE_FILE = cover.out
 COVERAGE_HTML = cover.html
-COVER_PACKAGE = ./src/...
+MAIN_PACKAGE = ./pkg
+COVER_PACKAGE = ./$(MAIN_PACKAGE)/...
 MOCK_PACKAGE = ./tests/mocks
+
 # Generate Go file_node from .proto file_node
 generate:
 	@echo "Generating Go files for all .proto files in the $(PROTO_DIR) directory..."
@@ -20,19 +22,21 @@ run: build
 
 mocks:
 	@echo "Generating test mocks"
-	@mockgen -source=./src/interfaces.go -destination=$(MOCK_PACKAGE)/mock_interfaces.go -package=mocks
-	@mockgen -source=./src/pb/files_node_grpc.pb.go -destination=$(MOCK_PACKAGE)/mock_files_node_service.go -package=mocks
+	@rm -rf $(MOCK_PACKAGE)
+	@mockgen -source=$(MAIN_PACKAGE)/nodes/base_node.go -destination=$(MOCK_PACKAGE)/mock_base_node.go -package=mocks
+	@mockgen -source=$(MAIN_PACKAGE)/storage/storage.go -destination=$(MOCK_PACKAGE)/mock_storage.go -package=mocks
+	@mockgen -source=$(MAIN_PACKAGE)/pb/files_node_grpc.pb.go -destination=$(MOCK_PACKAGE)/mock_files_node_service.go -package=mocks
 	@echo "Finished generating test mocks"
 
 test:
 	@echo "Running tests"
-	@go test ./tests/... -v
+	@gotestsum --format testname ./tests/... -v
 
 coverage:
 	@echo "Running tests with coverage"
-	@go test ./tests/... -v -coverpkg=$(COVER_PACKAGE) -coverprofile=$(COVERAGE_FILE)
+	@gotestsum --format testname ./tests/... -v -coverpkg=$(COVER_PACKAGE) -coverprofile=$(COVERAGE_FILE)
 
 
 clean:
 	@echo "Cleaning up..."
-	@rm -rf $(BUILDDIR) $(COVERAGE_FILE)
+	@$(RM_RF) $(BUILDDIR) $(COVERAGE_FILE)

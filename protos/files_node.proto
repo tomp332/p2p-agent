@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package p2p_agent;
 
-option go_package = "./src/pb";
+option go_package = "./pkg/pb";
 
 service FilesNodeService {
   rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
@@ -10,6 +10,7 @@ service FilesNodeService {
   rpc DirectDownloadFile(DirectDownloadFileRequest) returns (stream DirectDownloadFileResponse);
   rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
   rpc SearchFile(SearchFileRequest) returns (SearchFileResponse);
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
 }
 
 // Message for file upload request
@@ -65,4 +66,13 @@ message SearchFileRequest{
 message SearchFileResponse {
   string fileId=1;
   bool exists=2;
+}
+
+message AuthenticateRequest{
+  string username = 1;
+  string password = 2;
+}
+
+message AuthenticateResponse{
+  string token = 1;
 }
