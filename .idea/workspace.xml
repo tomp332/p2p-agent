@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="43a34acc-ee92-43ad-9d61-a2cb271fdd4d" name="Changes" comment="dev" />
+    <list default="true" id="43a34acc-ee92-43ad-9d61-a2cb271fdd4d" name="Changes" comment="dev">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/nodes/fsNode/node.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/nodes/fsNode/node.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/nodes/file/client_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tests/nodes/file/client_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/nodes/file/server_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tests/nodes/file/server_test.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -32,18 +37,18 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "tomp332"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;tomp332&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/tomp332/p2p-agent.git",
-    "accountId": "88d67004-5f08-4a38-ac0d-457028d46cdc"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/tomp332/p2p-agent.git&quot;,
+    &quot;accountId&quot;: &quot;88d67004-5f08-4a38-ac0d-457028d46cdc&quot;
   }
-}]]></component>
+}</component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="DEPENDENCY_CHECKER_PROBLEMS_TAB" />
   </component>
@@ -61,9 +66,22 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "DefaultGoTemplateProperty": "Go File",
-    "Go Build.go build main.go.executor": "Run",
+    "Go Build.Node Run 2.executor": "Debug",
+    "Go Build.Node Run.executor": "Debug",
+    "Go Build.go build github.com/tomp332/p2p-agent/tests.executor": "Run",
+    "Go Build.go build github.com/tomp332/p2p-agent/tests/nodes.executor": "Run",
+    "Go Build.go build main.go (1).executor": "Debug",
+    "Go Build.go build main.go.executor": "Debug",
+    "Go Test.TestFileNode_DownloadFile_RemotePeer in github.com/tomp332/p2p-agent/tests/nodes/file (1).executor": "Run",
+    "Go Test.TestFileNode_DownloadFile_RemotePeer in github.com/tomp332/p2p-agent/tests/nodes/file.executor": "Debug",
+    "Go Test.Test_DownloadFile_FileNotFound in github.com/tomp332/p2p-agent/tests/nodes/file.executor": "Run",
+    "Go Test.Test_DownloadFile_FromPeer in github.com/tomp332/p2p-agent/tests/nodes/file.executor": "Run",
+    "Go Test.Test_DownloadFile_Local in github.com/tomp332/p2p-agent/tests/nodes/file.executor": "Run",
+    "Go Test.Test_DownloadFile_NoPeers in github.com/tomp332/p2p-agent/tests/nodes/file.executor": "Run",
+    "Go Test.Test_DownloadFile_RemoteSuccess in github.com/tomp332/p2p-agent/tests/nodes/file.executor": "Debug",
+    "Go Test.Test_UploadFile in github.com/tomp332/p2p-agent/tests/nodes/file.executor": "Debug",
     "Go Test.client_test.go (1).executor": "Run",
-    "Go Test.client_test.go.executor": "Debug",
+    "Go Test.client_test.go.executor": "Run",
     "Go Test.server_test.go (1).executor": "Run",
     "Go Test.server_test.go.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
@@ -87,17 +105,21 @@
     </force-push-targets>
   </component>
   <component name="RecentsManager">
+    <key name="GoMoveDeclarationDialog.RECENT_KEY">
+      <recent name="$PROJECT_DIR$/pkg/nodes" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\tpaz1\GolandProjects\p2p-agent\pkg\utils\types" />
       <recent name="C:\Users\tpaz1\GolandProjects\p2p-agent\pkg\server\managers" />
       <recent name="C:\Users\tpaz1\GolandProjects\p2p-agent\pkg\server\interceptors" />
       <recent name="C:\Users\tpaz1\GolandProjects\p2p-agent\pkg\server" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.client_test.go (1)">
-    <configuration name="go build main.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Go Test.Test_UploadFile in github.com/tomp332/p2p-agent/tests/nodes/file">
+    <configuration name="Node Run 2" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="p2p-agent" />
       <working_directory value="$PROJECT_DIR$" />
-      <parameters value="-l trace -m development" />
+      <parameters value="--port 9001 -i 2" />
       <EXTENSION ID="net.ashald.envfile">
         <option name="IS_ENABLED" value="false" />
         <option name="IS_SUBST" value="false" />
@@ -114,7 +136,51 @@
       <filePath value="$PROJECT_DIR$/cmd/p2p-agent/main.go" />
       <method v="2" />
     </configuration>
-    <configuration name="client_test.go (1)" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="Node Run" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true">
+      <module name="p2p-agent" />
+      <working_directory value="$PROJECT_DIR$" />
+      <parameters value="--port 9000  -i 1" />
+      <EXTENSION ID="net.ashald.envfile">
+        <option name="IS_ENABLED" value="false" />
+        <option name="IS_SUBST" value="false" />
+        <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+        <option name="IS_IGNORE_MISSING_FILES" value="false" />
+        <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+        <ENTRIES>
+          <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+        </ENTRIES>
+      </EXTENSION>
+      <kind value="FILE" />
+      <package value="github.com/tomp332/p2p-agent" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/cmd/p2p-agent/main.go" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestFileNode_DownloadFile_RemotePeer in github.com/tomp332/p2p-agent/tests/nodes/file" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="p2p-agent" />
+      <working_directory value="$PROJECT_DIR$/tests/nodes/file" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/tomp332/p2p-agent/tests/nodes/file" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestFileNode_DownloadFile_RemotePeer\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Test_UploadFile in github.com/tomp332/p2p-agent/tests/nodes/file" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="p2p-agent" />
+      <working_directory value="$PROJECT_DIR$/tests/nodes/file" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/tomp332/p2p-agent/tests/nodes/file" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/tests/nodes/file/server_test.go" />
+      <framework value="gotest" />
+      <pattern value="^\QTest_UploadFile\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="client_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="p2p-agent" />
       <working_directory value="$PROJECT_DIR$/tests/nodes/file" />
       <root_directory value="$PROJECT_DIR$" />
@@ -124,17 +190,7 @@
       <framework value="gotest" />
       <method v="2" />
     </configuration>
-    <configuration name="client_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="p2p-agent" />
-      <working_directory value="$PROJECT_DIR$/tests/test_p2p/nodes/file" />
-      <root_directory value="$PROJECT_DIR$" />
-      <kind value="FILE" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$/tests/test_p2p/nodes/file/client_test.go" />
-      <framework value="gotest" />
-      <method v="2" />
-    </configuration>
-    <configuration name="server_test.go (1)" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="server_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="p2p-agent" />
       <working_directory value="$PROJECT_DIR$/tests/nodes/file" />
       <root_directory value="$PROJECT_DIR$" />
@@ -144,30 +200,21 @@
       <framework value="gotest" />
       <method v="2" />
     </configuration>
-    <configuration name="server_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="p2p-agent" />
-      <working_directory value="$PROJECT_DIR$/tests/test_p2p/nodes/file" />
-      <root_directory value="$PROJECT_DIR$" />
-      <kind value="FILE" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$/tests/test_p2p/nodes/file/server_test.go" />
-      <framework value="gotest" />
-      <method v="2" />
-    </configuration>
     <list>
-      <item itemvalue="Go Build.go build main.go" />
-      <item itemvalue="Go Test.client_test.go (1)" />
-      <item itemvalue="Go Test.server_test.go (1)" />
+      <item itemvalue="Go Build.Node Run 2" />
+      <item itemvalue="Go Build.Node Run" />
+      <item itemvalue="Go Test.TestFileNode_DownloadFile_RemotePeer in github.com/tomp332/p2p-agent/tests/nodes/file" />
+      <item itemvalue="Go Test.Test_UploadFile in github.com/tomp332/p2p-agent/tests/nodes/file" />
       <item itemvalue="Go Test.client_test.go" />
       <item itemvalue="Go Test.server_test.go" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.client_test.go (1)" />
-        <item itemvalue="Go Test.server_test.go (1)" />
-        <item itemvalue="Go Build.go build main.go" />
+        <item itemvalue="Go Test.Test_UploadFile in github.com/tomp332/p2p-agent/tests/nodes/file" />
         <item itemvalue="Go Test.server_test.go" />
+        <item itemvalue="Go Test.TestFileNode_DownloadFile_RemotePeer in github.com/tomp332/p2p-agent/tests/nodes/file" />
         <item itemvalue="Go Test.client_test.go" />
+        <item itemvalue="Go Build.Node Run" />
       </list>
     </recent_temporary>
   </component>
@@ -190,5 +237,12 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <default-breakpoints>
+        <breakpoint type="DlvErrorBreakpoint" />
+      </default-breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

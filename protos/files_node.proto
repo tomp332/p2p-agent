@@ -7,9 +7,7 @@ option go_package = "./pkg/pb";
 service FilesNodeService {
   rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
   rpc DownloadFile(DownloadFileRequest) returns (stream DownloadFileResponse);
-  rpc DirectDownloadFile(DirectDownloadFileRequest) returns (stream DirectDownloadFileResponse);
   rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
-  rpc SearchFile(SearchFileRequest) returns (SearchFileResponse);
   rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
 }
 
@@ -23,22 +21,11 @@ message UploadFileRequest {
 // Message for file upload response
 message UploadFileResponse {
   string fileId = 1;
-  double fileSize =2;
+  int64 fileSize =2;
   bool success = 3;
   string message = 4;
 }
 
-message DirectDownloadFileRequest{
-  string nodeId = 1;
-  string fileId = 2;
-}
-
-message DirectDownloadFileResponse{
-  string nodeId = 1;
-  string fileId = 2;
-  bytes chunk = 3;
-  bool exists = 4;
-}
 
 
 message DownloadFileRequest {
@@ -49,6 +36,7 @@ message DownloadFileResponse {
   bytes chunk = 1;
   string fileId = 2;
   bool exists = 3;
+  int64 chunkSize = 4;
 }
 
 message DeleteFileRequest {
@@ -59,14 +47,6 @@ message DeleteFileResponse {
   string fileId = 1;
 }
 
-message SearchFileRequest{
-  string fileId = 1;
-}
-
-message SearchFileResponse {
-  string fileId=1;
-  bool exists=2;
-}
 
 message AuthenticateRequest{
   string username = 1;

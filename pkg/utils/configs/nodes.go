@@ -37,7 +37,6 @@ type BootStrapNodeConnection struct {
 }
 
 type NodeConfig struct {
-	ID                   string                    `yaml:"id"`
 	BootstrapPeerAddrs   []BootStrapNodeConnection `mapstructure:"bootstrap_peer_addrs"`
 	BootstrapNodeTimeout time.Duration             `mapstructure:"bootstrap_node_timeout"`
 	Type                 NodeType

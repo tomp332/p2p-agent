@@ -6,7 +6,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/tomp332/p2p-agent/pkg/server"
 	"github.com/tomp332/p2p-agent/pkg/server/managers"
-	"github.com/tomp332/p2p-agent/pkg/utils"
 	"github.com/tomp332/p2p-agent/pkg/utils/configs"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -20,34 +19,26 @@ type P2PNoder interface {
 	ConnectToBootstrapPeers() error
 }
 
-type P2PNodeClienter interface{}
-
-type P2PNodeConnection interface{}
-
-type NodeConnection struct {
-	P2PNodeConnection
+type PeerConnection struct {
 	ConnectionInfo *configs.BootStrapNodeConnection
 	GrpcConnection *grpc.ClientConn
 	NodeClient     interface{}
+	Token          string
 }
 
 type BaseNode struct {
 	configs.NodeConfig
-	ConnectedPeers     []P2PNodeConnection
+	ConnectedPeers     []PeerConnection
 	ProtectedRoutes    []string
 	UnaryInterceptors  []grpc.UnaryServerInterceptor
 	StreamInterceptors []grpc.StreamServerInterceptor
-	JwtManager         *managers.JWTManager
+	AuthManager        managers.AuthenticationManager
 }
 
 func NewBaseNode(options *configs.NodeConfig) *BaseNode {
-	var id string
-	if id = options.ID; id == "" {
-		options.ID = utils.GenerateRandomID()
-	}
 	n := &BaseNode{
 		NodeConfig:     *options,
-		ConnectedPeers: make([]P2PNodeConnection, 0),
+		ConnectedPeers: make([]PeerConnection, 0),
 	}
 	return n
 }
@@ -68,7 +59,7 @@ func (n *BaseNode) ConnectToBootstrapPeers() error {
 		if err != nil {
 			return err
 		}
-		n.ConnectedPeers = append(n.ConnectedPeers, NodeConnection{
+		n.ConnectedPeers = append(n.ConnectedPeers, PeerConnection{
 			ConnectionInfo: &connectionInfo,
 			GrpcConnection: conn,
 		})

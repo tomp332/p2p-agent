@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/rs/zerolog/log"
 	"github.com/tomp332/p2p-agent/pkg/nodes"
-	"github.com/tomp332/p2p-agent/pkg/nodes/file_node"
+	"github.com/tomp332/p2p-agent/pkg/nodes/fsNode"
 	"github.com/tomp332/p2p-agent/pkg/server"
 	"github.com/tomp332/p2p-agent/pkg/storage"
 	"github.com/tomp332/p2p-agent/pkg/utils/configs"
@@ -45,8 +45,11 @@ func InitializeNode(server *server.GRPCServer, config *configs.NodeConfig) (node
 	baseNode := nodes.NewBaseNode(config)
 	switch config.Type {
 	case configs.FilesNodeType:
+		if config.Storage.RootDirectory == "" {
+			config.Storage.RootDirectory = configs.MainConfig.ID
+		}
 		localStorage := storage.NewLocalStorage(&config.Storage)
-		n = file_node.NewP2PFilesNode(baseNode, localStorage)
+		n = fsNode.NewP2PFilesNode(baseNode, localStorage)
 	default:
 		return nil, errors.New("invalid nodes type")
 	}
@@ -57,7 +60,7 @@ func InitializeNode(server *server.GRPCServer, config *configs.NodeConfig) (node
 	}
 	options := n.Options()
 	log.Info().
-		Str("id", options.ID).
+		Str("id", configs.MainConfig.ID).
 		Str("type", options.Type.ToString()).
 		Msg("Initialized nodes successfully.")
 	return n, nil

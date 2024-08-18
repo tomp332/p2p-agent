@@ -36,8 +36,17 @@ func setupDevLogger() zerolog.Logger {
 	}
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if configs.MainConfig.LogLevel != "" {
-		if strings.ToUpper(configs.MainConfig.LogLevel) == "DEBUG" {
+		switch strings.ToUpper(configs.MainConfig.LogLevel) {
+		case "DEBUG":
 			zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		case "TRACE":
+			zerolog.SetGlobalLevel(zerolog.TraceLevel)
+		case "INFO":
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		case "WARNING":
+			zerolog.SetGlobalLevel(zerolog.WarnLevel)
+		default:
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
 		}
 	}
 	return zerolog.New(output).With().Timestamp().Logger()

@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	types "github.com/tomp332/p2p-agent/pkg/utils/types"
 )
 
 // MockStorage is a mock of Storage interface.
@@ -49,10 +50,10 @@ func (mr *MockStorageMockRecorder) Delete(ctx, fileId interface{}) *gomock.Call 
 }
 
 // Get mocks base method.
-func (m *MockStorage) Get(ctx context.Context, fileID string) (<-chan []byte, error) {
+func (m *MockStorage) Get(ctx context.Context, fileID string) (<-chan types.TransferChunkData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, fileID)
-	ret0, _ := ret[0].(<-chan []byte)
+	ret0, _ := ret[0].(<-chan types.TransferChunkData)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -78,10 +79,10 @@ func (mr *MockStorageMockRecorder) Initialize() *gomock.Call {
 }
 
 // Put mocks base method.
-func (m *MockStorage) Put(ctx context.Context, fileID string, dataChan <-chan []byte) (float64, error) {
+func (m *MockStorage) Put(ctx context.Context, fileID string, dataChan <-chan types.TransferChunkData) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Put", ctx, fileID, dataChan)
-	ret0, _ := ret[0].(float64)
+	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -90,18 +91,4 @@ func (m *MockStorage) Put(ctx context.Context, fileID string, dataChan <-chan []
 func (mr *MockStorageMockRecorder) Put(ctx, fileID, dataChan interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockStorage)(nil).Put), ctx, fileID, dataChan)
-}
-
-// Search mocks base method.
-func (m *MockStorage) Search(fileID string) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Search", fileID)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Search indicates an expected call of Search.
-func (mr *MockStorageMockRecorder) Search(fileID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Search", reflect.TypeOf((*MockStorage)(nil).Search), fileID)
 }
