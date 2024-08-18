@@ -34,7 +34,7 @@ type BaseNode struct {
 	ProtectedRoutes    []string
 	UnaryInterceptors  []grpc.UnaryServerInterceptor
 	StreamInterceptors []grpc.StreamServerInterceptor
-	JwtManager         *managers.JWTManager
+	AuthManager        managers.AuthenticationManager
 }
 
 func NewBaseNode(options *configs.NodeConfig) *BaseNode {
