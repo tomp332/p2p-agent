@@ -102,6 +102,15 @@ func (fc *FileNodeClient) DownloadFile(ctx context.Context, fileId string) (<-ch
 	return dataChan, errChan
 }
 
+func (fc *FileNodeClient) Authenticate(ctx context.Context, username string, password string) (*pb.AuthenticateResponse, error) {
+	req := &pb.AuthenticateRequest{Username: username, Password: password}
+	res, err := fc.client.Authenticate(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-chan error {
 	errChan := make(chan error, 1) // Buffered channel to send any errors
 

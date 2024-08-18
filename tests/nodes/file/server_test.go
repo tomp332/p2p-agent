@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/tomp332/p2p-agent/pkg/nodes"
@@ -10,6 +11,7 @@ import (
 	"github.com/tomp332/p2p-agent/pkg/pb"
 	"github.com/tomp332/p2p-agent/pkg/utils/configs"
 	"github.com/tomp332/p2p-agent/tests/mocks"
+	"golang.org/x/crypto/bcrypt"
 	"io"
 	"testing"
 	"time"
@@ -33,7 +35,6 @@ func setupFileNode(_ *testing.T, ctrl *gomock.Controller) (*file_node.FileNode, 
 
 func Test_UploadFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	fileNode, mockStorage := setupFileNode(t, ctrl)
 	mockStream := mocks.NewMockFilesNodeService_UploadFileServer(ctrl)
@@ -56,7 +57,6 @@ func Test_UploadFile(t *testing.T) {
 
 func Test_DownloadFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	fileNode, mockStorage := setupFileNode(t, ctrl)
 	mockStream := mocks.NewMockFilesNodeService_DownloadFileServer(ctrl)
@@ -76,7 +76,6 @@ func Test_DownloadFile(t *testing.T) {
 
 func Test_DeleteFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	fileNode, mockStorage := setupFileNode(t, ctrl)
 
@@ -89,7 +88,6 @@ func Test_DeleteFile(t *testing.T) {
 
 func Test_SearchFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	fileNode, mockStorage := setupFileNode(t, ctrl)
 
@@ -102,7 +100,6 @@ func Test_SearchFile(t *testing.T) {
 
 func Test_DirectDownloadFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	fileNode, mockStorage := setupFileNode(t, ctrl)
 	mockStream := mocks.NewMockFilesNodeService_DirectDownloadFileServer(ctrl)
@@ -136,7 +133,6 @@ func Test_DirectDownloadFile(t *testing.T) {
 
 func Test_SearchFileInNetwork(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	// Mock the gRPC client
 	mockGRPCClient := mocks.NewMockFilesNodeServiceClient(ctrl)
@@ -195,5 +191,64 @@ func Test_SearchFileInNetwork(t *testing.T) {
 		_, errPeerError := fileNode.SearchFileInNetwork("fileId")
 		assert.Error(t, errPeerError)
 		assert.Equal(t, "file was not found in network", errPeerError.Error())
+	})
+}
+
+func TestFileNode_Authenticate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	mockAuthManager := mocks.NewMockAuthenticationManager(ctrl)
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("valid"), bcrypt.DefaultCost)
+	fileNode := &file_node.FileNode{
+		BaseNode: &nodes.BaseNode{
+			NodeConfig: configs.NodeConfig{
+				Type: configs.FilesNodeType,
+				Auth: configs.NodeAuthConfig{
+					Username: "valid",
+					Password: string(hashedPassword),
+				},
+			},
+			AuthManager: mockAuthManager,
+		},
+	}
+
+	t.Run("Successful Authentication", func(t *testing.T) {
+		mockAuthManager.EXPECT().Generate("valid", fileNode.Type).Return("valid-token", nil).Times(1)
+
+		req := &pb.AuthenticateRequest{Username: "valid", Password: "valid"}
+		res, err := fileNode.Authenticate(context.Background(), req)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, "valid-token", res.Token)
+	})
+
+	t.Run("Invalid Username", func(t *testing.T) {
+		req := &pb.AuthenticateRequest{Username: "invalid", Password: "valid"}
+		res, err := fileNode.Authenticate(context.Background(), req)
+
+		assert.Error(t, err)
+		assert.Nil(t, res)
+		assert.EqualError(t, err, "invalid username/password")
+	})
+
+	t.Run("Invalid Password", func(t *testing.T) {
+		req := &pb.AuthenticateRequest{Username: "valid", Password: "invalid"}
+		res, err := fileNode.Authenticate(context.Background(), req)
+
+		assert.Error(t, err)
+		assert.Nil(t, res)
+		assert.EqualError(t, err, "invalid username/password")
+	})
+
+	t.Run("Generate Token Failure", func(t *testing.T) {
+		mockAuthManager.EXPECT().Generate("valid", fileNode.Type).Return("", fmt.Errorf("failed to generate token")).Times(1)
+
+		req := &pb.AuthenticateRequest{Username: "valid", Password: "valid"}
+		res, err := fileNode.Authenticate(context.Background(), req)
+
+		assert.Error(t, err)
+		assert.Nil(t, res)
+		assert.EqualError(t, err, "failed to generate token")
 	})
 }
