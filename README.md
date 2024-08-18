@@ -31,3 +31,29 @@ Clone the repository:
 ```bash
 git clone https://github.com/tomp332/p2p-agent.git
 cd p2p-agent
+```
+
+### Configuration Example
+
+```yaml
+server:
+  host: localhost
+  port: 8080
+nodes:
+  file-node:
+      auth:
+        username: admin
+        password: admin
+      bootstrap_peer_addrs:
+        - host: localhost
+          port: 9999
+          username: admin
+          password: 1
+        - host: localhost
+          port: 9991
+          username: admin
+          password: 1
+logger_mode: dev
+logger_level: trace
+
+```
