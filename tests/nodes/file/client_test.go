@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"errors"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/tomp332/p2p-agent/pkg/nodes/file_node"
@@ -15,7 +16,6 @@ import (
 
 func TestFileNodeClient_SearchFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	mockClient := mocks.NewMockFilesNodeServiceClient(ctrl)
 	fileNodeClient := file_node.NewFileNodeClient(mockClient, 5*time.Second)
@@ -30,7 +30,6 @@ func TestFileNodeClient_SearchFile(t *testing.T) {
 
 func TestFileNodeClient_DirectDownloadFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	mockClient := mocks.NewMockFilesNodeServiceClient(ctrl)
 	mockStream := mocks.NewMockFilesNodeService_DirectDownloadFileClient(ctrl)
@@ -53,7 +52,6 @@ func TestFileNodeClient_DirectDownloadFile(t *testing.T) {
 
 func TestFileNodeClient_DownloadFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	mockClient := mocks.NewMockFilesNodeServiceClient(ctrl)
 	mockStream := mocks.NewMockFilesNodeService_DownloadFileClient(ctrl)
@@ -71,9 +69,43 @@ func TestFileNodeClient_DownloadFile(t *testing.T) {
 	assert.NoError(t, <-errChan)
 }
 
+func TestFileNodeClient_Authenticate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockClient := mocks.NewMockFilesNodeServiceClient(ctrl)
+	fileNodeClient := file_node.NewFileNodeClient(mockClient, 5*time.Second)
+	mockClient.EXPECT().Authenticate(gomock.Any(), &pb.AuthenticateRequest{Username: "test", Password: "test"}).Return(&pb.AuthenticateResponse{Token: "123"}, nil).Times(1)
+	authResponse, err := fileNodeClient.Authenticate(context.Background(), "test", "test")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, authResponse.Token)
+	assert.Equal(t, "123", authResponse.Token)
+}
+
+func TestFileNodeClient_BadAuthentication(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	// Set up the mock client and the file node client
+	mockClient := mocks.NewMockFilesNodeServiceClient(ctrl)
+	fileNodeClient := file_node.NewFileNodeClient(mockClient, 5*time.Second)
+
+	// Set up the expectation for the Authenticate call to return an error
+	mockClient.EXPECT().
+		Authenticate(gomock.Any(), &pb.AuthenticateRequest{Username: "wrong", Password: "wrong"}).
+		Return(nil, errors.New("authentication failed")).
+		Times(1)
+
+	// Call the Authenticate method with incorrect credentials
+	authResponse, err := fileNodeClient.Authenticate(context.Background(), "wrong", "wrong")
+
+	// Assert that an error was returned
+	assert.Error(t, err)
+	assert.EqualError(t, err, "authentication failed")
+
+	// Assert that the response is nil (i.e., no token was returned)
+	assert.Nil(t, authResponse)
+}
+
 func TestFileNodeClient_UploadFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	// Create a temporary file for testing
 	tempFile, err := os.CreateTemp("", "testfile")

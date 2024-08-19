@@ -25,6 +25,8 @@ mocks:
 	@rm -rf $(MOCK_PACKAGE)
 	@mockgen -source=$(MAIN_PACKAGE)/nodes/base_node.go -destination=$(MOCK_PACKAGE)/mock_base_node.go -package=mocks
 	@mockgen -source=$(MAIN_PACKAGE)/storage/storage.go -destination=$(MOCK_PACKAGE)/mock_storage.go -package=mocks
+	@mockgen -source=$(MAIN_PACKAGE)/server/managers/jwt.go -destination=$(MOCK_PACKAGE)/mock_jwt_manager.go -package=mocks
+	@mockgen -source=$(MAIN_PACKAGE)/server/managers/base.go -destination=$(MOCK_PACKAGE)/mock_authentication_manager.go -package=mocks
 	@mockgen -source=$(MAIN_PACKAGE)/pb/files_node_grpc.pb.go -destination=$(MOCK_PACKAGE)/mock_files_node_service.go -package=mocks
 	@echo "Finished generating test mocks"
 
