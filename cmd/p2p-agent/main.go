@@ -22,6 +22,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&configs.MainConfig.LoggerMode, "logger-mode", "m", "console", "Logger mode (dev, production)")
 	rootCmd.PersistentFlags().StringVarP(&configs.MainConfig.ServerConfig.Host, "host", "", "localhost", "Hostname to host the server on")
 	rootCmd.PersistentFlags().Int32VarP(&configs.MainConfig.ServerConfig.Port, "port", "", 8080, "Port to listen on")
+	rootCmd.PersistentFlags().StringVarP(&configs.MainConfig.ID, "node-id", "i", utils.GenerateRandomID(), "Node ID")
 }
 
 // rootCmd is the main command for the CLI

@@ -24,9 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type FilesNodeServiceClient interface {
 	UploadFile(ctx context.Context, opts ...grpc.CallOption) (FilesNodeService_UploadFileClient, error)
 	DownloadFile(ctx context.Context, in *DownloadFileRequest, opts ...grpc.CallOption) (FilesNodeService_DownloadFileClient, error)
-	DirectDownloadFile(ctx context.Context, in *DirectDownloadFileRequest, opts ...grpc.CallOption) (FilesNodeService_DirectDownloadFileClient, error)
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
-	SearchFile(ctx context.Context, in *SearchFileRequest, opts ...grpc.CallOption) (*SearchFileResponse, error)
 	Authenticate(ctx context.Context, in *AuthenticateRequest, opts ...grpc.CallOption) (*AuthenticateResponse, error)
 }
 
@@ -104,50 +102,9 @@ func (x *filesNodeServiceDownloadFileClient) Recv() (*DownloadFileResponse, erro
 	return m, nil
 }
 
-func (c *filesNodeServiceClient) DirectDownloadFile(ctx context.Context, in *DirectDownloadFileRequest, opts ...grpc.CallOption) (FilesNodeService_DirectDownloadFileClient, error) {
-	stream, err := c.cc.NewStream(ctx, &FilesNodeService_ServiceDesc.Streams[2], "/p2p_agent.FilesNodeService/DirectDownloadFile", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &filesNodeServiceDirectDownloadFileClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type FilesNodeService_DirectDownloadFileClient interface {
-	Recv() (*DirectDownloadFileResponse, error)
-	grpc.ClientStream
-}
-
-type filesNodeServiceDirectDownloadFileClient struct {
-	grpc.ClientStream
-}
-
-func (x *filesNodeServiceDirectDownloadFileClient) Recv() (*DirectDownloadFileResponse, error) {
-	m := new(DirectDownloadFileResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 func (c *filesNodeServiceClient) DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error) {
 	out := new(DeleteFileResponse)
 	err := c.cc.Invoke(ctx, "/p2p_agent.FilesNodeService/DeleteFile", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *filesNodeServiceClient) SearchFile(ctx context.Context, in *SearchFileRequest, opts ...grpc.CallOption) (*SearchFileResponse, error) {
-	out := new(SearchFileResponse)
-	err := c.cc.Invoke(ctx, "/p2p_agent.FilesNodeService/SearchFile", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -169,9 +126,7 @@ func (c *filesNodeServiceClient) Authenticate(ctx context.Context, in *Authentic
 type FilesNodeServiceServer interface {
 	UploadFile(FilesNodeService_UploadFileServer) error
 	DownloadFile(*DownloadFileRequest, FilesNodeService_DownloadFileServer) error
-	DirectDownloadFile(*DirectDownloadFileRequest, FilesNodeService_DirectDownloadFileServer) error
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
-	SearchFile(context.Context, *SearchFileRequest) (*SearchFileResponse, error)
 	Authenticate(context.Context, *AuthenticateRequest) (*AuthenticateResponse, error)
 	mustEmbedUnimplementedFilesNodeServiceServer()
 }
@@ -186,14 +141,8 @@ func (UnimplementedFilesNodeServiceServer) UploadFile(FilesNodeService_UploadFil
 func (UnimplementedFilesNodeServiceServer) DownloadFile(*DownloadFileRequest, FilesNodeService_DownloadFileServer) error {
 	return status.Errorf(codes.Unimplemented, "method DownloadFile not implemented")
 }
-func (UnimplementedFilesNodeServiceServer) DirectDownloadFile(*DirectDownloadFileRequest, FilesNodeService_DirectDownloadFileServer) error {
-	return status.Errorf(codes.Unimplemented, "method DirectDownloadFile not implemented")
-}
 func (UnimplementedFilesNodeServiceServer) DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteFile not implemented")
-}
-func (UnimplementedFilesNodeServiceServer) SearchFile(context.Context, *SearchFileRequest) (*SearchFileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SearchFile not implemented")
 }
 func (UnimplementedFilesNodeServiceServer) Authenticate(context.Context, *AuthenticateRequest) (*AuthenticateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Authenticate not implemented")
@@ -258,27 +207,6 @@ func (x *filesNodeServiceDownloadFileServer) Send(m *DownloadFileResponse) error
 	return x.ServerStream.SendMsg(m)
 }
 
-func _FilesNodeService_DirectDownloadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(DirectDownloadFileRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(FilesNodeServiceServer).DirectDownloadFile(m, &filesNodeServiceDirectDownloadFileServer{stream})
-}
-
-type FilesNodeService_DirectDownloadFileServer interface {
-	Send(*DirectDownloadFileResponse) error
-	grpc.ServerStream
-}
-
-type filesNodeServiceDirectDownloadFileServer struct {
-	grpc.ServerStream
-}
-
-func (x *filesNodeServiceDirectDownloadFileServer) Send(m *DirectDownloadFileResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
 func _FilesNodeService_DeleteFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteFileRequest)
 	if err := dec(in); err != nil {
@@ -293,24 +221,6 @@ func _FilesNodeService_DeleteFile_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(FilesNodeServiceServer).DeleteFile(ctx, req.(*DeleteFileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _FilesNodeService_SearchFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SearchFileRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(FilesNodeServiceServer).SearchFile(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/p2p_agent.FilesNodeService/SearchFile",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FilesNodeServiceServer).SearchFile(ctx, req.(*SearchFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -345,10 +255,6 @@ var FilesNodeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _FilesNodeService_DeleteFile_Handler,
 		},
 		{
-			MethodName: "SearchFile",
-			Handler:    _FilesNodeService_SearchFile_Handler,
-		},
-		{
 			MethodName: "Authenticate",
 			Handler:    _FilesNodeService_Authenticate_Handler,
 		},
@@ -362,11 +268,6 @@ var FilesNodeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "DownloadFile",
 			Handler:       _FilesNodeService_DownloadFile_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "DirectDownloadFile",
-			Handler:       _FilesNodeService_DirectDownloadFile_Handler,
 			ServerStreams: true,
 		},
 	},

@@ -28,6 +28,7 @@ func LoadConfig(file string) {
 }
 
 type AgentConfig struct {
+	ID           string       `yaml:"id"`
 	ServerConfig ServerConfig `mapstructure:"server"`
 	Nodes        AllNodesMap  `mapstructure:"nodes"`
 	LoggerMode   string       `mapstructure:"logger_mode"`

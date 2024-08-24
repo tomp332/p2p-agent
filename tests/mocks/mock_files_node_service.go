@@ -77,26 +77,6 @@ func (mr *MockFilesNodeServiceClientMockRecorder) DeleteFile(ctx, in interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFile", reflect.TypeOf((*MockFilesNodeServiceClient)(nil).DeleteFile), varargs...)
 }
 
-// DirectDownloadFile mocks base method.
-func (m *MockFilesNodeServiceClient) DirectDownloadFile(ctx context.Context, in *pb.DirectDownloadFileRequest, opts ...grpc.CallOption) (pb.FilesNodeService_DirectDownloadFileClient, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "DirectDownloadFile", varargs...)
-	ret0, _ := ret[0].(pb.FilesNodeService_DirectDownloadFileClient)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// DirectDownloadFile indicates an expected call of DirectDownloadFile.
-func (mr *MockFilesNodeServiceClientMockRecorder) DirectDownloadFile(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DirectDownloadFile", reflect.TypeOf((*MockFilesNodeServiceClient)(nil).DirectDownloadFile), varargs...)
-}
-
 // DownloadFile mocks base method.
 func (m *MockFilesNodeServiceClient) DownloadFile(ctx context.Context, in *pb.DownloadFileRequest, opts ...grpc.CallOption) (pb.FilesNodeService_DownloadFileClient, error) {
 	m.ctrl.T.Helper()
@@ -115,26 +95,6 @@ func (mr *MockFilesNodeServiceClientMockRecorder) DownloadFile(ctx, in interface
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadFile", reflect.TypeOf((*MockFilesNodeServiceClient)(nil).DownloadFile), varargs...)
-}
-
-// SearchFile mocks base method.
-func (m *MockFilesNodeServiceClient) SearchFile(ctx context.Context, in *pb.SearchFileRequest, opts ...grpc.CallOption) (*pb.SearchFileResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "SearchFile", varargs...)
-	ret0, _ := ret[0].(*pb.SearchFileResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SearchFile indicates an expected call of SearchFile.
-func (mr *MockFilesNodeServiceClientMockRecorder) SearchFile(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchFile", reflect.TypeOf((*MockFilesNodeServiceClient)(nil).SearchFile), varargs...)
 }
 
 // UploadFile mocks base method.
@@ -417,129 +377,6 @@ func (mr *MockFilesNodeService_DownloadFileClientMockRecorder) Trailer() *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trailer", reflect.TypeOf((*MockFilesNodeService_DownloadFileClient)(nil).Trailer))
 }
 
-// MockFilesNodeService_DirectDownloadFileClient is a mock of FilesNodeService_DirectDownloadFileClient interface.
-type MockFilesNodeService_DirectDownloadFileClient struct {
-	ctrl     *gomock.Controller
-	recorder *MockFilesNodeService_DirectDownloadFileClientMockRecorder
-}
-
-// MockFilesNodeService_DirectDownloadFileClientMockRecorder is the mock recorder for MockFilesNodeService_DirectDownloadFileClient.
-type MockFilesNodeService_DirectDownloadFileClientMockRecorder struct {
-	mock *MockFilesNodeService_DirectDownloadFileClient
-}
-
-// NewMockFilesNodeService_DirectDownloadFileClient creates a new mock instance.
-func NewMockFilesNodeService_DirectDownloadFileClient(ctrl *gomock.Controller) *MockFilesNodeService_DirectDownloadFileClient {
-	mock := &MockFilesNodeService_DirectDownloadFileClient{ctrl: ctrl}
-	mock.recorder = &MockFilesNodeService_DirectDownloadFileClientMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockFilesNodeService_DirectDownloadFileClient) EXPECT() *MockFilesNodeService_DirectDownloadFileClientMockRecorder {
-	return m.recorder
-}
-
-// CloseSend mocks base method.
-func (m *MockFilesNodeService_DirectDownloadFileClient) CloseSend() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CloseSend")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CloseSend indicates an expected call of CloseSend.
-func (mr *MockFilesNodeService_DirectDownloadFileClientMockRecorder) CloseSend() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseSend", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileClient)(nil).CloseSend))
-}
-
-// Context mocks base method.
-func (m *MockFilesNodeService_DirectDownloadFileClient) Context() context.Context {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Context")
-	ret0, _ := ret[0].(context.Context)
-	return ret0
-}
-
-// Context indicates an expected call of Context.
-func (mr *MockFilesNodeService_DirectDownloadFileClientMockRecorder) Context() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileClient)(nil).Context))
-}
-
-// Header mocks base method.
-func (m *MockFilesNodeService_DirectDownloadFileClient) Header() (metadata.MD, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Header")
-	ret0, _ := ret[0].(metadata.MD)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Header indicates an expected call of Header.
-func (mr *MockFilesNodeService_DirectDownloadFileClientMockRecorder) Header() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Header", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileClient)(nil).Header))
-}
-
-// Recv mocks base method.
-func (m *MockFilesNodeService_DirectDownloadFileClient) Recv() (*pb.DirectDownloadFileResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Recv")
-	ret0, _ := ret[0].(*pb.DirectDownloadFileResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Recv indicates an expected call of Recv.
-func (mr *MockFilesNodeService_DirectDownloadFileClientMockRecorder) Recv() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileClient)(nil).Recv))
-}
-
-// RecvMsg mocks base method.
-func (m_2 *MockFilesNodeService_DirectDownloadFileClient) RecvMsg(m any) error {
-	m_2.ctrl.T.Helper()
-	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// RecvMsg indicates an expected call of RecvMsg.
-func (mr *MockFilesNodeService_DirectDownloadFileClientMockRecorder) RecvMsg(m interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileClient)(nil).RecvMsg), m)
-}
-
-// SendMsg mocks base method.
-func (m_2 *MockFilesNodeService_DirectDownloadFileClient) SendMsg(m any) error {
-	m_2.ctrl.T.Helper()
-	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SendMsg indicates an expected call of SendMsg.
-func (mr *MockFilesNodeService_DirectDownloadFileClientMockRecorder) SendMsg(m interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileClient)(nil).SendMsg), m)
-}
-
-// Trailer mocks base method.
-func (m *MockFilesNodeService_DirectDownloadFileClient) Trailer() metadata.MD {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Trailer")
-	ret0, _ := ret[0].(metadata.MD)
-	return ret0
-}
-
-// Trailer indicates an expected call of Trailer.
-func (mr *MockFilesNodeService_DirectDownloadFileClientMockRecorder) Trailer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trailer", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileClient)(nil).Trailer))
-}
-
 // MockFilesNodeServiceServer is a mock of FilesNodeServiceServer interface.
 type MockFilesNodeServiceServer struct {
 	ctrl     *gomock.Controller
@@ -593,20 +430,6 @@ func (mr *MockFilesNodeServiceServerMockRecorder) DeleteFile(arg0, arg1 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFile", reflect.TypeOf((*MockFilesNodeServiceServer)(nil).DeleteFile), arg0, arg1)
 }
 
-// DirectDownloadFile mocks base method.
-func (m *MockFilesNodeServiceServer) DirectDownloadFile(arg0 *pb.DirectDownloadFileRequest, arg1 pb.FilesNodeService_DirectDownloadFileServer) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DirectDownloadFile", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DirectDownloadFile indicates an expected call of DirectDownloadFile.
-func (mr *MockFilesNodeServiceServerMockRecorder) DirectDownloadFile(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DirectDownloadFile", reflect.TypeOf((*MockFilesNodeServiceServer)(nil).DirectDownloadFile), arg0, arg1)
-}
-
 // DownloadFile mocks base method.
 func (m *MockFilesNodeServiceServer) DownloadFile(arg0 *pb.DownloadFileRequest, arg1 pb.FilesNodeService_DownloadFileServer) error {
 	m.ctrl.T.Helper()
@@ -619,21 +442,6 @@ func (m *MockFilesNodeServiceServer) DownloadFile(arg0 *pb.DownloadFileRequest, 
 func (mr *MockFilesNodeServiceServerMockRecorder) DownloadFile(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadFile", reflect.TypeOf((*MockFilesNodeServiceServer)(nil).DownloadFile), arg0, arg1)
-}
-
-// SearchFile mocks base method.
-func (m *MockFilesNodeServiceServer) SearchFile(arg0 context.Context, arg1 *pb.SearchFileRequest) (*pb.SearchFileResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SearchFile", arg0, arg1)
-	ret0, _ := ret[0].(*pb.SearchFileResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SearchFile indicates an expected call of SearchFile.
-func (mr *MockFilesNodeServiceServerMockRecorder) SearchFile(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchFile", reflect.TypeOf((*MockFilesNodeServiceServer)(nil).SearchFile), arg0, arg1)
 }
 
 // UploadFile mocks base method.
@@ -948,123 +756,4 @@ func (m *MockFilesNodeService_DownloadFileServer) SetTrailer(arg0 metadata.MD) {
 func (mr *MockFilesNodeService_DownloadFileServerMockRecorder) SetTrailer(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockFilesNodeService_DownloadFileServer)(nil).SetTrailer), arg0)
-}
-
-// MockFilesNodeService_DirectDownloadFileServer is a mock of FilesNodeService_DirectDownloadFileServer interface.
-type MockFilesNodeService_DirectDownloadFileServer struct {
-	ctrl     *gomock.Controller
-	recorder *MockFilesNodeService_DirectDownloadFileServerMockRecorder
-}
-
-// MockFilesNodeService_DirectDownloadFileServerMockRecorder is the mock recorder for MockFilesNodeService_DirectDownloadFileServer.
-type MockFilesNodeService_DirectDownloadFileServerMockRecorder struct {
-	mock *MockFilesNodeService_DirectDownloadFileServer
-}
-
-// NewMockFilesNodeService_DirectDownloadFileServer creates a new mock instance.
-func NewMockFilesNodeService_DirectDownloadFileServer(ctrl *gomock.Controller) *MockFilesNodeService_DirectDownloadFileServer {
-	mock := &MockFilesNodeService_DirectDownloadFileServer{ctrl: ctrl}
-	mock.recorder = &MockFilesNodeService_DirectDownloadFileServerMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockFilesNodeService_DirectDownloadFileServer) EXPECT() *MockFilesNodeService_DirectDownloadFileServerMockRecorder {
-	return m.recorder
-}
-
-// Context mocks base method.
-func (m *MockFilesNodeService_DirectDownloadFileServer) Context() context.Context {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Context")
-	ret0, _ := ret[0].(context.Context)
-	return ret0
-}
-
-// Context indicates an expected call of Context.
-func (mr *MockFilesNodeService_DirectDownloadFileServerMockRecorder) Context() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileServer)(nil).Context))
-}
-
-// RecvMsg mocks base method.
-func (m_2 *MockFilesNodeService_DirectDownloadFileServer) RecvMsg(m any) error {
-	m_2.ctrl.T.Helper()
-	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// RecvMsg indicates an expected call of RecvMsg.
-func (mr *MockFilesNodeService_DirectDownloadFileServerMockRecorder) RecvMsg(m interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileServer)(nil).RecvMsg), m)
-}
-
-// Send mocks base method.
-func (m *MockFilesNodeService_DirectDownloadFileServer) Send(arg0 *pb.DirectDownloadFileResponse) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Send", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Send indicates an expected call of Send.
-func (mr *MockFilesNodeService_DirectDownloadFileServerMockRecorder) Send(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileServer)(nil).Send), arg0)
-}
-
-// SendHeader mocks base method.
-func (m *MockFilesNodeService_DirectDownloadFileServer) SendHeader(arg0 metadata.MD) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendHeader", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SendHeader indicates an expected call of SendHeader.
-func (mr *MockFilesNodeService_DirectDownloadFileServerMockRecorder) SendHeader(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileServer)(nil).SendHeader), arg0)
-}
-
-// SendMsg mocks base method.
-func (m_2 *MockFilesNodeService_DirectDownloadFileServer) SendMsg(m any) error {
-	m_2.ctrl.T.Helper()
-	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SendMsg indicates an expected call of SendMsg.
-func (mr *MockFilesNodeService_DirectDownloadFileServerMockRecorder) SendMsg(m interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileServer)(nil).SendMsg), m)
-}
-
-// SetHeader mocks base method.
-func (m *MockFilesNodeService_DirectDownloadFileServer) SetHeader(arg0 metadata.MD) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetHeader", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetHeader indicates an expected call of SetHeader.
-func (mr *MockFilesNodeService_DirectDownloadFileServerMockRecorder) SetHeader(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileServer)(nil).SetHeader), arg0)
-}
-
-// SetTrailer mocks base method.
-func (m *MockFilesNodeService_DirectDownloadFileServer) SetTrailer(arg0 metadata.MD) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetTrailer", arg0)
-}
-
-// SetTrailer indicates an expected call of SetTrailer.
-func (mr *MockFilesNodeService_DirectDownloadFileServerMockRecorder) SetTrailer(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockFilesNodeService_DirectDownloadFileServer)(nil).SetTrailer), arg0)
 }

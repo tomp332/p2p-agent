@@ -1,18 +1,23 @@
-package file_node
+package fsNode
 
 import (
 	"context"
 	"fmt"
 	"github.com/rs/zerolog/log"
-	"github.com/tomp332/p2p-agent/pkg/nodes"
 	"github.com/tomp332/p2p-agent/pkg/pb"
+	"github.com/tomp332/p2p-agent/pkg/utils/types"
 	"io"
 	"os"
 	"time"
 )
 
+type FileNodeClientType interface {
+	DownloadFile(ctx context.Context, fileId string) (<-chan []byte, <-chan error)
+	Authenticate(ctx context.Context, username string, password string) (*pb.AuthenticateResponse, error)
+	UploadFile(ctx context.Context, filePath string) <-chan error
+}
+
 type FileNodeClient struct {
-	nodes.P2PNodeClienter
 	client         pb.FilesNodeServiceClient
 	requestTimeout time.Duration
 }
@@ -24,82 +29,53 @@ func NewFileNodeClient(client pb.FilesNodeServiceClient, requestTimeout time.Dur
 	}
 }
 
-func (fc *FileNodeClient) SearchFile(ctx context.Context, fileId string) (bool, error) {
-	req := &pb.SearchFileRequest{FileId: fileId}
-	res, err := fc.client.SearchFile(ctx, req)
-	if err != nil {
-		log.Error().Err(err).Msg("could not search file on current node.")
-		return false, err
-	}
-	return res.Exists, nil
-}
+func (fc *FileNodeClient) DownloadFile(ctx context.Context, fileId string) (<-chan types.TransferChunkData, <-chan error) {
+	dataChan := make(chan types.TransferChunkData)
+	errChan := make(chan error, 1) // buffered channel to avoid goroutine leak
 
-func (fc *FileNodeClient) DirectDownloadFile(ctx context.Context, fileId string, nodeId string) (<-chan []byte, <-chan error) {
-	dataChan := make(chan []byte)
-	errChan := make(chan error, 1)
-
+	// Create a goroutine to handle the download.
 	go func() {
 		defer close(dataChan)
-		defer close(errChan)
-
-		req := &pb.DirectDownloadFileRequest{NodeId: nodeId, FileId: fileId}
-		stream, err := fc.client.DirectDownloadFile(ctx, req)
-		if err != nil {
-			errChan <- err
-			return
-		}
-
-		for {
-			res, streamErr := stream.Recv()
-			if streamErr == io.EOF {
-				// End of the stream
-				errChan <- nil
-				return
-			}
-			if streamErr != nil {
-				errChan <- streamErr
-				return
-			}
-			// Send the received chunk to the data channel
-			dataChan <- res.GetChunk()
-		}
-	}()
-
-	return dataChan, errChan
-}
-
-func (fc *FileNodeClient) DownloadFile(ctx context.Context, fileId string) (<-chan []byte, <-chan error) {
-	dataChan := make(chan []byte)
-	errChan := make(chan error, 1)
-
-	go func() {
-		defer close(dataChan)
-		defer close(errChan)
+		defer close(errChan) // Ensure errChan is closed when goroutine finishes
 
 		req := &pb.DownloadFileRequest{FileId: fileId}
 		stream, err := fc.client.DownloadFile(ctx, req)
 		if err != nil {
-			errChan <- err
+			log.Error().Err(err).Msg("Failed to download file from remote peer.")
+			errChan <- err // Send the error to the error channel
 			return
 		}
 
 		for {
-			res, streamErr := stream.Recv()
-			if streamErr == io.EOF {
-				// End of the stream
-				errChan <- nil
+			select {
+			case <-ctx.Done():
+				// Handle context cancellation
+				log.Info().Str("fileId", fileId).Msg("Download cancelled by context")
+				errChan <- ctx.Err() // Send the context error to the error channel
 				return
+			default:
+				res, streamErr := stream.Recv()
+				if streamErr == io.EOF {
+					// End of the stream
+					log.Debug().Msg("End of stream for file download from remote peer")
+					return
+				}
+				if streamErr != nil {
+					log.Error().Err(streamErr).Msg("Failed to receive file chunk from remote peer")
+					errChan <- streamErr // Send the stream error to the error channel
+					return
+				}
+				// Send the received chunk to the data channel
+				log.Debug().Str("fileId", fileId).Int64("size", res.GetChunkSize()).Msg("Received file chunk from remote peer")
+				dataChan <- types.TransferChunkData{
+					ChunkSize: res.GetChunkSize(),
+					ChunkData: res.GetChunk(),
+				}
 			}
-			if streamErr != nil {
-				errChan <- streamErr
-				return
-			}
-			// Send the received chunk to the data channel
-			dataChan <- res.GetChunk()
 		}
 	}()
 
-	return dataChan, errChan
+	return dataChan, errChan // Return both channels to the caller
 }
 
 func (fc *FileNodeClient) Authenticate(ctx context.Context, username string, password string) (*pb.AuthenticateResponse, error) {
@@ -154,7 +130,7 @@ func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-cha
 
 				log.Debug().
 					Str("fileId", response.GetFileId()).
-					Float64("fileSize", response.GetFileSize()).
+					Int64("fileSize", response.GetFileSize()).
 					Msgf("File uploaded successfully")
 				return
 			}
