@@ -23,14 +23,15 @@ run: build
 mocks:
 	@echo "Generating test mocks"
 	@rm -rf $(MOCK_PACKAGE)
-	@mockgen -source=$(MAIN_PACKAGE)/nodes/base_node.go -destination=$(MOCK_PACKAGE)/mock_base_node.go -package=mocks
-	@mockgen -source=$(MAIN_PACKAGE)/storage/storage.go -destination=$(MOCK_PACKAGE)/mock_storage.go -package=mocks
-	@mockgen -source=$(MAIN_PACKAGE)/server/managers/base.go -destination=$(MOCK_PACKAGE)/mock_authentication_manager.go -package=mocks
-	@mockgen -source=$(MAIN_PACKAGE)/pb/files_node_grpc.pb.go -destination=$(MOCK_PACKAGE)/mock_files_node_service.go -package=mocks
-	@mockgen -source=$(MAIN_PACKAGE)/nodes/fsNode/client.go -destination=$(MOCK_PACKAGE)/mock_file_node_client.go -package=mocks
+	@mockgen -source=./pkg/pb/files_node_grpc.pb.go -destination ./tests/mocks/mock_fsNodeService.go --package mocks
+	@mockgen -source=./pkg/storage/storage.go -destination ./tests/mocks/mock_storage.go --package mocks
+	@mockgen -source=./tests/interfaces/fsNodeClient.go -destination ./tests/mocks/mock_fsNodeStreams.go --package mocks
+	@mockgen -source=./pkg/nodes/client.go -destination ./tests/mocks/mock_nodeClient.go --package mocks
+	@mockgen -source=./pkg/nodes/fsNode/client.go -destination ./tests/mocks/mock_fsNodeClient.go --package mocks
+	@mockgen -source=./pkg/server/managers/base.go -destination ./tests/mocks/mock_authenticationManager.go --package mocks
 	@echo "Finished generating test mocks"
 
-test:
+tests:
 	@echo "Running tests"
 	@gotestsum --format testname ./tests/... -v
 

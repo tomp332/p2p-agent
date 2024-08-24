@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/rs/zerolog/log"
+	"github.com/tomp332/p2p-agent/pkg/nodes"
 	"github.com/tomp332/p2p-agent/pkg/pb"
+	"github.com/tomp332/p2p-agent/pkg/utils/configs"
 	"github.com/tomp332/p2p-agent/pkg/utils/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -14,37 +16,57 @@ import (
 	"time"
 )
 
-type FileNodeClientType interface {
-	DownloadFile(ctx context.Context, fileId string) (<-chan []byte, <-chan error)
+type FileNodeType interface {
+	nodes.NodeClient
+	SearchFile(searchCtx context.Context, fileName string) (*pb.SearchFileResponse, error)
+	DownloadFile(searchCtx context.Context, fileName string) (<-chan *types.TransferChunkData, <-chan error)
 	Authenticate(ctx context.Context, username string, password string) (*pb.AuthenticateResponse, error)
 	UploadFile(ctx context.Context, filePath string) <-chan error
 }
 
 type FileNodeClient struct {
-	client          pb.FilesNodeServiceClient
+	ServiceClient   pb.FilesNodeServiceClient
 	authToken       *string
-	protectedRoutes *[]string
-	requestTimeout  time.Duration
+	AuthConfig      *configs.BootStrapNodeConnection
+	ProtectedRoutes *[]string
+	RequestTimeout  time.Duration
 }
 
-func NewFileNodeClient(client pb.FilesNodeServiceClient, authToken *string, requestTimeout time.Duration, protectedRoutes *[]string) *FileNodeClient {
+func NewFileNodeClient(client pb.FilesNodeServiceClient, protectedRoutes *[]string, authConfig *configs.BootStrapNodeConnection, requestTimeout time.Duration) *FileNodeClient {
 	return &FileNodeClient{
-		client:          client,
-		authToken:       authToken,
-		requestTimeout:  requestTimeout,
-		protectedRoutes: protectedRoutes,
+		ServiceClient:   client,
+		AuthConfig:      authConfig,
+		RequestTimeout:  requestTimeout,
+		ProtectedRoutes: protectedRoutes,
 	}
 }
 
+func (fc *FileNodeClient) Connect() (string, error) {
+	authResponse, err := fc.ServiceClient.Authenticate(context.Background(), &pb.AuthenticateRequest{
+		Username: fc.AuthConfig.Username,
+		Password: fc.AuthConfig.Password,
+	})
+	if err != nil {
+		return "", err
+	}
+	fc.authToken = &authResponse.Token
+	return authResponse.NodeId, nil
+}
+
+func (fc *FileNodeClient) Disconnect() error {
+	fc.authToken = nil
+	return nil
+}
+
 func (fc *FileNodeClient) SearchFile(searchCtx context.Context, fileName string) (*pb.SearchFileResponse, error) {
-	return fc.client.SearchFile(searchCtx, &pb.SearchFileRequest{
+	return fc.ServiceClient.SearchFile(searchCtx, &pb.SearchFileRequest{
 		FileName: fileName,
 	})
 }
 
-func (fc *FileNodeClient) DownloadFile(searchCtx context.Context, fileName string) (<-chan types.TransferChunkData, <-chan error) {
+func (fc *FileNodeClient) DownloadFile(searchCtx context.Context, fileName string) (<-chan *types.TransferChunkData, <-chan error) {
 	searchAuthCtx := fc.appendTokenToCall(searchCtx) // Ensure token is attached
-	dataChan := make(chan types.TransferChunkData)
+	dataChan := make(chan *types.TransferChunkData)
 	errChan := make(chan error, 1) // Buffered channel to avoid goroutine leak
 	// Create a goroutine to handle the download
 	go func() {
@@ -52,7 +74,7 @@ func (fc *FileNodeClient) DownloadFile(searchCtx context.Context, fileName strin
 		defer close(errChan) // Ensure errChan is closed when goroutine finishes
 
 		req := &pb.DownloadFileRequest{FileName: fileName}
-		stream, err := fc.client.DownloadFile(searchAuthCtx, req)
+		stream, err := fc.ServiceClient.DownloadFile(searchAuthCtx, req)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to download file from remote peer.")
 			errChan <- err // Send the error to the error channel
@@ -78,7 +100,7 @@ func (fc *FileNodeClient) DownloadFile(searchCtx context.Context, fileName strin
 					return
 				}
 				// Send the received chunk to the data channel
-				dataChan <- types.TransferChunkData{
+				dataChan <- &types.TransferChunkData{
 					ChunkSize: int(res.GetChunkSize()),
 					ChunkData: res.GetChunk(),
 				}
@@ -91,7 +113,7 @@ func (fc *FileNodeClient) DownloadFile(searchCtx context.Context, fileName strin
 
 func (fc *FileNodeClient) Authenticate(ctx context.Context, username string, password string) (*pb.AuthenticateResponse, error) {
 	req := &pb.AuthenticateRequest{Username: username, Password: password}
-	res, err := fc.client.Authenticate(ctx, req)
+	res, err := fc.ServiceClient.Authenticate(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +137,7 @@ func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-cha
 		defer file.Close()
 
 		// Create a new upload stream
-		stream, streamErr := fc.client.UploadFile(authCtx)
+		stream, streamErr := fc.ServiceClient.UploadFile(authCtx)
 		if streamErr != nil {
 			log.Error().Msgf("Failed to create upload stream: %v", streamErr)
 			errChan <- streamErr
@@ -171,11 +193,11 @@ func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-cha
 
 func (fc *FileNodeClient) appendTokenToCall(parentCtx context.Context) context.Context {
 	method, _ := grpc.Method(parentCtx)
-	if fc.protectedRoutes == nil || fc.authToken == nil {
+	if fc.ProtectedRoutes == nil || fc.authToken == nil {
 		log.Trace().Msg("No auth token or protected routes provided for current fsNode client, skipping auth attachment.")
 		return parentCtx
 	}
-	if !slices.Contains(*fc.protectedRoutes, method) {
+	if !slices.Contains(*fc.ProtectedRoutes, method) {
 		// Method is not protected and does not need to attach a token.
 		return nil
 	}

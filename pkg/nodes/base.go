@@ -23,8 +23,7 @@ type P2PNoder interface {
 type PeerConnection struct {
 	ID             string
 	ConnectionInfo *configs.BootStrapNodeConnection
-	GrpcConnection *grpc.ClientConn
-	NodeClient     interface{}
+	NodeClient     NodeClient
 	Token          string
 }
 
