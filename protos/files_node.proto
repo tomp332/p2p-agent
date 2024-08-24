@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package p2p_agent;
+package p2pAgent;
 
 option go_package = "./pkg/pb";
 
@@ -8,7 +8,17 @@ service FilesNodeService {
   rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
   rpc DownloadFile(DownloadFileRequest) returns (stream DownloadFileResponse);
   rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
+  rpc SearchFile(SearchFileRequest) returns (SearchFileResponse);
   rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+}
+
+message SearchFileResponse{
+  string fileName =1;
+  string nodeId = 2;
+}
+
+message SearchFileRequest{
+  string fileName = 1;
 }
 
 // Message for file upload request
@@ -20,31 +30,30 @@ message UploadFileRequest {
 
 // Message for file upload response
 message UploadFileResponse {
-  string fileId = 1;
-  int64 fileSize =2;
-  bool success = 3;
-  string message = 4;
+  string fileName = 1;
+  uint64 fileSize =2;
+  string fileHash = 3;
 }
 
 
 
 message DownloadFileRequest {
-  string fileId = 1;
+  string fileName = 1;
 }
 
 message DownloadFileResponse {
   bytes chunk = 1;
-  string fileId = 2;
-  bool exists = 3;
-  int64 chunkSize = 4;
+  string fileName = 2;
+  int32 chunkSize = 4;
 }
 
 message DeleteFileRequest {
-  string fileId = 1;
+  string fileName = 1;
 }
 
 message DeleteFileResponse {
-  string fileId = 1;
+  string fileName = 1;
+  bool status = 2;
 }
 
 
@@ -55,4 +64,5 @@ message AuthenticateRequest{
 
 message AuthenticateResponse{
   string token = 1;
+  string nodeId = 2;
 }

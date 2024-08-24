@@ -6,8 +6,11 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/tomp332/p2p-agent/pkg/pb"
 	"github.com/tomp332/p2p-agent/pkg/utils/types"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"io"
 	"os"
+	"slices"
 	"time"
 )
 
@@ -18,40 +21,49 @@ type FileNodeClientType interface {
 }
 
 type FileNodeClient struct {
-	client         pb.FilesNodeServiceClient
-	requestTimeout time.Duration
+	client          pb.FilesNodeServiceClient
+	authToken       *string
+	protectedRoutes *[]string
+	requestTimeout  time.Duration
 }
 
-func NewFileNodeClient(client pb.FilesNodeServiceClient, requestTimeout time.Duration) *FileNodeClient {
+func NewFileNodeClient(client pb.FilesNodeServiceClient, authToken *string, requestTimeout time.Duration, protectedRoutes *[]string) *FileNodeClient {
 	return &FileNodeClient{
-		client:         client,
-		requestTimeout: requestTimeout,
+		client:          client,
+		authToken:       authToken,
+		requestTimeout:  requestTimeout,
+		protectedRoutes: protectedRoutes,
 	}
 }
 
-func (fc *FileNodeClient) DownloadFile(ctx context.Context, fileId string) (<-chan types.TransferChunkData, <-chan error) {
-	dataChan := make(chan types.TransferChunkData)
-	errChan := make(chan error, 1) // buffered channel to avoid goroutine leak
+func (fc *FileNodeClient) SearchFile(searchCtx context.Context, fileName string) (*pb.SearchFileResponse, error) {
+	return fc.client.SearchFile(searchCtx, &pb.SearchFileRequest{
+		FileName: fileName,
+	})
+}
 
-	// Create a goroutine to handle the download.
+func (fc *FileNodeClient) DownloadFile(searchCtx context.Context, fileName string) (<-chan types.TransferChunkData, <-chan error) {
+	searchAuthCtx := fc.appendTokenToCall(searchCtx) // Ensure token is attached
+	dataChan := make(chan types.TransferChunkData)
+	errChan := make(chan error, 1) // Buffered channel to avoid goroutine leak
+	// Create a goroutine to handle the download
 	go func() {
 		defer close(dataChan)
 		defer close(errChan) // Ensure errChan is closed when goroutine finishes
 
-		req := &pb.DownloadFileRequest{FileId: fileId}
-		stream, err := fc.client.DownloadFile(ctx, req)
+		req := &pb.DownloadFileRequest{FileName: fileName}
+		stream, err := fc.client.DownloadFile(searchAuthCtx, req)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to download file from remote peer.")
 			errChan <- err // Send the error to the error channel
 			return
 		}
 
+		// Main goroutine to receive data from the stream
 		for {
 			select {
-			case <-ctx.Done():
-				// Handle context cancellation
-				log.Info().Str("fileId", fileId).Msg("Download cancelled by context")
-				errChan <- ctx.Err() // Send the context error to the error channel
+			case <-searchAuthCtx.Done():
+				log.Info().Str("fileName", fileName).Msg("Streaming context canceled, stopping download")
 				return
 			default:
 				res, streamErr := stream.Recv()
@@ -66,9 +78,8 @@ func (fc *FileNodeClient) DownloadFile(ctx context.Context, fileId string) (<-ch
 					return
 				}
 				// Send the received chunk to the data channel
-				log.Debug().Str("fileId", fileId).Int64("size", res.GetChunkSize()).Msg("Received file chunk from remote peer")
 				dataChan <- types.TransferChunkData{
-					ChunkSize: res.GetChunkSize(),
+					ChunkSize: int(res.GetChunkSize()),
 					ChunkData: res.GetChunk(),
 				}
 			}
@@ -88,6 +99,7 @@ func (fc *FileNodeClient) Authenticate(ctx context.Context, username string, pas
 }
 
 func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-chan error {
+	authCtx := fc.appendTokenToCall(ctx)
 	errChan := make(chan error, 1) // Buffered channel to send any errors
 
 	go func() {
@@ -103,7 +115,7 @@ func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-cha
 		defer file.Close()
 
 		// Create a new upload stream
-		stream, streamErr := fc.client.UploadFile(ctx)
+		stream, streamErr := fc.client.UploadFile(authCtx)
 		if streamErr != nil {
 			log.Error().Msgf("Failed to create upload stream: %v", streamErr)
 			errChan <- streamErr
@@ -123,14 +135,15 @@ func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-cha
 					return
 				}
 
-				if !response.GetSuccess() {
-					errChan <- fmt.Errorf("file upload failed: %s", response.GetMessage())
+				if response.GetFileHash() != "" {
+					errChan <- fmt.Errorf("file upload failed")
 					return
 				}
 
 				log.Debug().
-					Str("fileId", response.GetFileId()).
-					Int64("fileSize", response.GetFileSize()).
+					Str("fileName", response.GetFileName()).
+					Uint64("fileSize", response.GetFileSize()).
+					Str("fileHash", response.GetFileHash()).
 					Msgf("File uploaded successfully")
 				return
 			}
@@ -154,4 +167,17 @@ func (fc *FileNodeClient) UploadFile(ctx context.Context, filePath string) <-cha
 	}()
 
 	return errChan
+}
+
+func (fc *FileNodeClient) appendTokenToCall(parentCtx context.Context) context.Context {
+	method, _ := grpc.Method(parentCtx)
+	if fc.protectedRoutes == nil || fc.authToken == nil {
+		log.Trace().Msg("No auth token or protected routes provided for current fsNode client, skipping auth attachment.")
+		return parentCtx
+	}
+	if !slices.Contains(*fc.protectedRoutes, method) {
+		// Method is not protected and does not need to attach a token.
+		return nil
+	}
+	return metadata.AppendToOutgoingContext(parentCtx, "authorization", "Bearer "+*fc.authToken)
 }

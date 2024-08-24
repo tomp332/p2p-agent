@@ -14,12 +14,14 @@ import (
 )
 
 type P2PNoder interface {
-	Register(server *server.GRPCServer)
+	ServiceRegister(server *server.GRPCServer)
+	InterceptorsRegister(server *server.GRPCServer)
 	Options() *configs.NodeConfig
 	ConnectToBootstrapPeers() error
 }
 
 type PeerConnection struct {
+	ID             string
 	ConnectionInfo *configs.BootStrapNodeConnection
 	GrpcConnection *grpc.ClientConn
 	NodeClient     interface{}
@@ -28,7 +30,7 @@ type PeerConnection struct {
 
 type BaseNode struct {
 	configs.NodeConfig
-	ConnectedPeers     []PeerConnection
+	ConnectedPeers     map[string]PeerConnection
 	ProtectedRoutes    []string
 	UnaryInterceptors  []grpc.UnaryServerInterceptor
 	StreamInterceptors []grpc.StreamServerInterceptor
@@ -38,12 +40,14 @@ type BaseNode struct {
 func NewBaseNode(options *configs.NodeConfig) *BaseNode {
 	n := &BaseNode{
 		NodeConfig:     *options,
-		ConnectedPeers: make([]PeerConnection, 0),
+		ConnectedPeers: make(map[string]PeerConnection),
 	}
 	return n
 }
 
-func (n *BaseNode) Register(_ *grpc.Server) {}
+func (n *BaseNode) Register(_ *server.GRPCServer) {}
+
+func (n *BaseNode) InterceptorsRegister(_ *server.GRPCServer) {}
 
 func (n *BaseNode) Options() *configs.NodeConfig {
 	return &n.NodeConfig
@@ -54,16 +58,6 @@ func (n *BaseNode) Terminate() error {
 }
 
 func (n *BaseNode) ConnectToBootstrapPeers() error {
-	for _, connectionInfo := range n.BootstrapPeerAddrs {
-		conn, err := n.ConnectToPeer(&connectionInfo, n.BootstrapNodeTimeout)
-		if err != nil {
-			return err
-		}
-		n.ConnectedPeers = append(n.ConnectedPeers, PeerConnection{
-			ConnectionInfo: &connectionInfo,
-			GrpcConnection: conn,
-		})
-	}
 	return nil
 }
 
@@ -88,14 +82,6 @@ func (n *BaseNode) ConnectToPeer(connectionInfo *configs.BootStrapNodeConnection
 		return nil, fmt.Errorf("bootstrap peer nodes is not healthy")
 	}
 	return connection, nil
-}
-
-func (b *BaseNode) AddUnaryInterceptors(interceptors ...grpc.UnaryServerInterceptor) {
-	b.UnaryInterceptors = append(b.UnaryInterceptors, interceptors...)
-}
-
-func (b *BaseNode) AddStreamInterceptors(interceptors ...grpc.StreamServerInterceptor) {
-	b.StreamInterceptors = append(b.StreamInterceptors, interceptors...)
 }
 
 func clientConnection(connectionInfo *configs.BootStrapNodeConnection) (*grpc.ClientConn, error) {

@@ -7,6 +7,7 @@ package mocks
 import (
 	context "context"
 	reflect "reflect"
+	sync "sync"
 
 	gomock "github.com/golang/mock/gomock"
 	types "github.com/tomp332/p2p-agent/pkg/utils/types"
@@ -36,32 +37,46 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 }
 
 // Delete mocks base method.
-func (m *MockStorage) Delete(ctx context.Context, fileId string) error {
+func (m *MockStorage) Delete(ctx context.Context, fileName string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, fileId)
+	ret := m.ctrl.Call(m, "Delete", ctx, fileName)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockStorageMockRecorder) Delete(ctx, fileId interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) Delete(ctx, fileName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockStorage)(nil).Delete), ctx, fileId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockStorage)(nil).Delete), ctx, fileName)
+}
+
+// Exists mocks base method.
+func (m *MockStorage) Exists(fileName string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Exists", fileName)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Exists indicates an expected call of Exists.
+func (mr *MockStorageMockRecorder) Exists(fileName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockStorage)(nil).Exists), fileName)
 }
 
 // Get mocks base method.
-func (m *MockStorage) Get(ctx context.Context, fileID string) (<-chan types.TransferChunkData, error) {
+func (m *MockStorage) Get(ctx context.Context, fileName string) (<-chan *types.TransferChunkData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, fileID)
-	ret0, _ := ret[0].(<-chan types.TransferChunkData)
+	ret := m.ctrl.Call(m, "Get", ctx, fileName)
+	ret0, _ := ret[0].(<-chan *types.TransferChunkData)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockStorageMockRecorder) Get(ctx, fileID interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) Get(ctx, fileName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStorage)(nil).Get), ctx, fileID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStorage)(nil).Get), ctx, fileName)
 }
 
 // Initialize mocks base method.
@@ -79,16 +94,15 @@ func (mr *MockStorageMockRecorder) Initialize() *gomock.Call {
 }
 
 // Put mocks base method.
-func (m *MockStorage) Put(ctx context.Context, fileID string, dataChan <-chan types.TransferChunkData) (int64, error) {
+func (m *MockStorage) Put(ctx context.Context, fileName string, fileDataChan <-chan *types.TransferChunkData, wg *sync.WaitGroup) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Put", ctx, fileID, dataChan)
-	ret0, _ := ret[0].(int64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "Put", ctx, fileName, fileDataChan, wg)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Put indicates an expected call of Put.
-func (mr *MockStorageMockRecorder) Put(ctx, fileID, dataChan interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) Put(ctx, fileName, fileDataChan, wg interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockStorage)(nil).Put), ctx, fileID, dataChan)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockStorage)(nil).Put), ctx, fileName, fileDataChan, wg)
 }
