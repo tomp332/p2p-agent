@@ -65,7 +65,7 @@ func (s *GRPCServer) Setup() error {
 }
 
 func (s *GRPCServer) Start() error {
-	// Register all services
+	// ServiceRegister all services
 	for nodeType, registrar := range s.ServiceRegistrars {
 		registrar(s.BaseServer)
 		log.Debug().Str("service", nodeType.ToString()).Msg("Registered service")
@@ -74,7 +74,7 @@ func (s *GRPCServer) Start() error {
 	if s.BaseServer == nil {
 		log.Fatal().Msg("server setup() has not been called yet")
 	}
-	// Register Health service.
+	// ServiceRegister Health service.
 	healthServer := health.NewServer()
 	grpc_health_v1.RegisterHealthServer(s.BaseServer, healthServer)
 	reflection.Register(s.BaseServer)

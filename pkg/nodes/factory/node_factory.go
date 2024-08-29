@@ -53,7 +53,8 @@ func InitializeNode(server *server.GRPCServer, config *configs.NodeConfig) (node
 	default:
 		return nil, errors.New("invalid nodes type")
 	}
-	n.Register(server)
+	n.InterceptorsRegister(server)
+	n.ServiceRegister(server)
 	err := n.ConnectToBootstrapPeers()
 	if err != nil {
 		log.Warn().Msgf("Bootstrapping process failed")

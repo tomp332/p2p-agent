@@ -1,7 +1,7 @@
 package types
 
 type TransferChunkData struct {
-	ChunkSize int64
+	ChunkSize int
 	ChunkData []byte
-	TotalSize int64
+	Metadata  interface{}
 }
