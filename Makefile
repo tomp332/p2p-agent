@@ -25,7 +25,10 @@ mocks:
 	@rm -rf $(MOCK_PACKAGE)
 	@mockgen -source=./pkg/pb/files_node_grpc.pb.go -destination ./tests/mocks/mock_fsNodeService.go --package mocks
 	@mockgen -source=./pkg/storage/storage.go -destination ./tests/mocks/mock_storage.go --package mocks
-	@mockgen -source=./tests/interfaces/fsNodeClient.go -destination ./tests/mocks/mock_fsNodeClient.go --package mocks
+	@mockgen -source=./tests/interfaces/fsNodeClient.go -destination ./tests/mocks/mock_fsNodeStreams.go --package mocks
+	@mockgen -source=./pkg/nodes/client.go -destination ./tests/mocks/mock_nodeClient.go --package mocks
+	@mockgen -source=./pkg/nodes/fsNode/client.go -destination ./tests/mocks/mock_fsNodeClient.go --package mocks
+	@mockgen -source=./pkg/server/managers/base.go -destination ./tests/mocks/mock_authenticationManager.go --package mocks
 	@echo "Finished generating test mocks"
 
 tests:

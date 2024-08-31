@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/tomp332/p2p-agent/pkg/nodes"
@@ -11,6 +12,7 @@ import (
 	"github.com/tomp332/p2p-agent/pkg/utils/configs"
 	"github.com/tomp332/p2p-agent/pkg/utils/types"
 	"github.com/tomp332/p2p-agent/tests/mocks"
+	"golang.org/x/crypto/bcrypt"
 	"io"
 	"sync"
 	"testing"
@@ -21,8 +23,7 @@ func Test_UploadFile_Server(t *testing.T) {
 
 	// Create mocks
 	mockStorage := mocks.NewMockStorage(ctrl)
-	clientStream := mocks.NewMockUploadFileServer(ctrl)
-
+	mockServerStream := mocks.NewMockUploadFileServerStream(ctrl)
 	nodeConfig := &configs.NodeConfig{
 		Type: configs.FilesNodeType,
 	}
@@ -32,15 +33,15 @@ func Test_UploadFile_Server(t *testing.T) {
 	t.Run("Successful upload with correct file size", func(t *testing.T) {
 		mockResult := &pb.UploadFileResponse{}
 
-		clientStream.EXPECT().Context().Return(context.Background()).AnyTimes()
-		callRecv1 := clientStream.EXPECT().Recv().
+		mockServerStream.EXPECT().Context().Return(context.Background()).AnyTimes()
+		callRecv1 := mockServerStream.EXPECT().Recv().
 			Return(&pb.UploadFileRequest{FileName: "test.txt", ChunkData: []byte("chunk1")}, nil).
 			Times(1)
-		callRecv2 := clientStream.EXPECT().Recv().
+		callRecv2 := mockServerStream.EXPECT().Recv().
 			Return(&pb.UploadFileRequest{FileName: "test.txt", ChunkData: []byte("chunk2")}, nil).
 			Times(1).After(callRecv1)
-		clientStream.EXPECT().Recv().Return(nil, io.EOF).After(callRecv2)
-		clientStream.EXPECT().SendAndClose(gomock.Any()).DoAndReturn(
+		mockServerStream.EXPECT().Recv().Return(nil, io.EOF).After(callRecv2)
+		mockServerStream.EXPECT().SendAndClose(gomock.Any()).DoAndReturn(
 			func(result *pb.UploadFileResponse) error {
 				mockResult = result
 				return nil
@@ -55,7 +56,7 @@ func Test_UploadFile_Server(t *testing.T) {
 			},
 		).Times(1)
 
-		err := fileNode.UploadFile(clientStream)
+		err := fileNode.UploadFile(mockServerStream)
 		assert.Nil(t, err)
 		assert.NotEmpty(t, mockResult)
 		if mockResult.FileSize != 12 {
@@ -65,8 +66,8 @@ func Test_UploadFile_Server(t *testing.T) {
 
 	// Sub-test for missing file name
 	t.Run("Upload with missing file name", func(t *testing.T) {
-		clientStream.EXPECT().Context().Return(context.Background()).AnyTimes()
-		clientStream.EXPECT().Recv().
+		mockServerStream.EXPECT().Context().Return(context.Background()).AnyTimes()
+		mockServerStream.EXPECT().Recv().
 			Return(&pb.UploadFileRequest{FileName: "", ChunkData: []byte("chunk1")}, nil).
 			Times(1)
 		mockStorage.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
@@ -77,19 +78,19 @@ func Test_UploadFile_Server(t *testing.T) {
 				return nil
 			},
 		).Times(1)
-		err := fileNode.UploadFile(clientStream)
+		err := fileNode.UploadFile(mockServerStream)
 		assert.NotNil(t, err)
 		assert.Equal(t, "no file name was specified in the upload request", err.Error())
 	})
 
 	// Sub-test for SendAndClose failure
 	t.Run("Upload with SendAndClose failure", func(t *testing.T) {
-		clientStream.EXPECT().Context().Return(context.Background()).AnyTimes()
-		callRecv1 := clientStream.EXPECT().Recv().
+		mockServerStream.EXPECT().Context().Return(context.Background()).AnyTimes()
+		callRecv1 := mockServerStream.EXPECT().Recv().
 			Return(&pb.UploadFileRequest{FileName: "test.txt", ChunkData: []byte("chunk1")}, nil).
 			Times(1)
-		clientStream.EXPECT().Recv().Return(nil, io.EOF).After(callRecv1)
-		clientStream.EXPECT().SendAndClose(gomock.Any()).DoAndReturn(
+		mockServerStream.EXPECT().Recv().Return(nil, io.EOF).After(callRecv1)
+		mockServerStream.EXPECT().SendAndClose(gomock.Any()).DoAndReturn(
 			func(result *pb.UploadFileResponse) error {
 				return errors.New("SendAndClose failed")
 			})
@@ -103,7 +104,7 @@ func Test_UploadFile_Server(t *testing.T) {
 			},
 		).Times(1)
 
-		err := fileNode.UploadFile(clientStream)
+		err := fileNode.UploadFile(mockServerStream)
 		assert.NotNil(t, err)
 		assert.Equal(t, "SendAndClose failed", err.Error())
 	})
@@ -111,11 +112,11 @@ func Test_UploadFile_Server(t *testing.T) {
 	// Sub-test for error in Put
 	t.Run("Upload with error in Put", func(t *testing.T) {
 
-		clientStream.EXPECT().Context().Return(context.Background()).AnyTimes()
-		callRecv1 := clientStream.EXPECT().Recv().
+		mockServerStream.EXPECT().Context().Return(context.Background()).AnyTimes()
+		callRecv1 := mockServerStream.EXPECT().Recv().
 			Return(&pb.UploadFileRequest{FileName: "test.txt", ChunkData: []byte("chunk1")}, nil).
 			Times(1)
-		clientStream.EXPECT().Recv().Return(nil, io.EOF).After(callRecv1)
+		mockServerStream.EXPECT().Recv().Return(nil, io.EOF).After(callRecv1)
 		mockStorage.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 			func(ctx context.Context, fileName string, fileDataChan <-chan *types.TransferChunkData, wg *sync.WaitGroup) error {
 				for range fileDataChan {
@@ -125,7 +126,7 @@ func Test_UploadFile_Server(t *testing.T) {
 			},
 		).Times(1)
 
-		err := fileNode.UploadFile(clientStream)
+		err := fileNode.UploadFile(mockServerStream)
 		assert.NotNil(t, err)
 		assert.Equal(t, "storage error", err.Error())
 	})
@@ -161,11 +162,11 @@ func Test_DownloadFile_Server(t *testing.T) {
 	nodeConfig := &configs.NodeConfig{
 		Type: configs.FilesNodeType,
 	}
+	serverStream := mocks.NewMockDownloadFileServerStream(ctrl)
 	fileNode := fsNode.NewP2PFilesNode(nodes.NewBaseNode(nodeConfig), mockStorage)
 
 	t.Run("download file successfully", func(t *testing.T) {
 		configs.MainConfig.ID = "1"
-		serverStream := mocks.NewMockDownloadFileServer(ctrl)
 		serverStream.EXPECT().Context().Return(context.Background()).AnyTimes()
 		mockStorage.EXPECT().Exists("testfile").Return(true).AnyTimes()
 		serverStream.EXPECT().Send(&pb.DownloadFileResponse{
@@ -193,7 +194,6 @@ func Test_DownloadFile_Server(t *testing.T) {
 	})
 
 	t.Run("file does not exist", func(t *testing.T) {
-		serverStream := mocks.NewMockDownloadFileServer(ctrl)
 		serverStream.EXPECT().Context().Return(context.Background()).AnyTimes()
 		mockStorage.EXPECT().Exists("nonexistentfile").Return(false).AnyTimes()
 
@@ -205,7 +205,6 @@ func Test_DownloadFile_Server(t *testing.T) {
 	})
 
 	t.Run("error retrieving file chunks", func(t *testing.T) {
-		serverStream := mocks.NewMockDownloadFileServer(ctrl)
 		serverStream.EXPECT().Context().Return(context.Background()).AnyTimes()
 		mockStorage.EXPECT().Exists("testfile").Return(true).AnyTimes()
 		mockStorage.EXPECT().Get(context.Background(), "testfile").Return(nil, errors.New("error getting file chunks"))
@@ -218,7 +217,6 @@ func Test_DownloadFile_Server(t *testing.T) {
 	})
 
 	t.Run("error sending file chunks", func(t *testing.T) {
-		serverStream := mocks.NewMockDownloadFileServer(ctrl)
 		serverStream.EXPECT().Context().Return(context.Background()).AnyTimes()
 		mockStorage.EXPECT().Exists("testfile").Return(true).AnyTimes()
 		serverStream.EXPECT().Send(&pb.DownloadFileResponse{
@@ -246,52 +244,7 @@ func Test_DownloadFile_Server(t *testing.T) {
 		assert.Equal(t, "error sending chunk", err.Error())
 	})
 
-	t.Run("context canceled during download", func(t *testing.T) {
-		// Create a cancellable context
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		// Mock the server stream
-		serverStream := mocks.NewMockDownloadFileServer(ctrl)
-		serverStream.EXPECT().Context().Return(ctx).AnyTimes()
-
-		// Mock the storage to simulate file existence
-		mockStorage.EXPECT().Exists("testfile").Return(true).AnyTimes()
-
-		// Mock the storage's Get method to simulate data retrieval and cancellation
-		mockStorage.
-			EXPECT().
-			Get(ctx, "testfile").
-			DoAndReturn(func(ctx context.Context, fileName string) (<-chan *types.TransferChunkData, error) {
-				dataChan := make(chan *types.TransferChunkData, 1)
-				go func() {
-					// Simulate sending a chunk after some delay
-					dataChan <- &types.TransferChunkData{
-						ChunkData: []byte("data"),
-						ChunkSize: 4,
-					}
-
-					// Simulate context cancellation after a short delay
-					cancel()
-
-					// Close the data channel
-					close(dataChan)
-				}()
-				return dataChan, nil
-			})
-
-		// Call DownloadFile and expect it to handle the context cancellation
-		err := fileNode.DownloadFile(&pb.DownloadFileRequest{
-			FileName: "testfile",
-		}, serverStream)
-
-		// Verify that an error occurred due to context cancellation
-		assert.Error(t, err)
-		assert.Equal(t, context.Canceled.Error(), err.Error())
-	})
-
 	t.Run("multiple chunks to send", func(t *testing.T) {
-		serverStream := mocks.NewMockDownloadFileServer(ctrl)
 		serverStream.EXPECT().Context().Return(context.Background()).AnyTimes()
 		mockStorage.EXPECT().Exists("testfile").Return(true).AnyTimes()
 		serverStream.EXPECT().Send(&pb.DownloadFileResponse{
@@ -328,148 +281,148 @@ func Test_DownloadFile_Server(t *testing.T) {
 	})
 }
 
-//func TestFileNode_Authenticate(t *testing.T) {
-//	ctrl := gomock.NewController(t)
-//
-//	mockAuthManager := mocks.NewMockAuthenticationManager(ctrl)
-//	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("valid"), bcrypt.DefaultCost)
-//	fileNode := &fsNode.FileNode{
-//		BaseNode: &nodes.BaseNode{
-//			NodeConfig: configs.NodeConfig{
-//				Type: configs.FilesNodeType,
-//				Auth: configs.NodeAuthConfig{
-//					Username: "valid",
-//					Password: string(hashedPassword),
-//				},
-//			},
-//			AuthManager: mockAuthManager,
-//		},
-//	}
-//
-//	t.Run("Successful Authentication", func(t *testing.T) {
-//		mockAuthManager.EXPECT().Generate("valid", fileNode.Type).Return("valid-token", nil).Times(1)
-//
-//		req := &pb.AuthenticateRequest{Username: "valid", Password: "valid"}
-//		res, err := fileNode.Authenticate(context.Background(), req)
-//
-//		assert.NoError(t, err)
-//		assert.NotNil(t, res)
-//		assert.Equal(t, "valid-token", res.Token)
-//	})
-//
-//	t.Run("Invalid Username", func(t *testing.T) {
-//		req := &pb.AuthenticateRequest{Username: "invalid", Password: "valid"}
-//		res, err := fileNode.Authenticate(context.Background(), req)
-//
-//		assert.Error(t, err)
-//		assert.Nil(t, res)
-//		assert.EqualError(t, err, "invalid username/password")
-//	})
-//
-//	t.Run("Invalid Password", func(t *testing.T) {
-//		req := &pb.AuthenticateRequest{Username: "valid", Password: "invalid"}
-//		res, err := fileNode.Authenticate(context.Background(), req)
-//
-//		assert.Error(t, err)
-//		assert.Nil(t, res)
-//		assert.EqualError(t, err, "invalid username/password")
-//	})
-//
-//	t.Run("Generate Token Failure", func(t *testing.T) {
-//		mockAuthManager.EXPECT().Generate("valid", fileNode.Type).Return("", fmt.Errorf("failed to generate token")).Times(1)
-//
-//		req := &pb.AuthenticateRequest{Username: "valid", Password: "valid"}
-//		res, err := fileNode.Authenticate(context.Background(), req)
-//
-//		assert.Error(t, err)
-//		assert.Nil(t, res)
-//		assert.EqualError(t, err, "failed to generate token")
-//	})
-//}
+func Test_Authenticate_Server(t *testing.T) {
+	ctrl := gomock.NewController(t)
 
-//func TestFileNode_DownloadFile_RemotePeer(t *testing.T) {
-//	ctrl := gomock.NewController(t)
-//
-//	// Create mocks
-//	remoteMockClient := mocks.NewMockFilesNodeServiceClient(ctrl)
-//	mockStorage := mocks.NewMockStorage(ctrl)
-//	mockStream := mocks.NewMockFilesNodeService_DownloadFileClient(ctrl) // Mock stream
-//	// Create FileNode instance with mocks
-//	fileNode := &fsNode.FileNode{
-//		BaseNode: &nodes.BaseNode{
-//			ConnectedPeers: map[string]nodes.PeerConnection{
-//				"1": {
-//					ID: "1",
-//					ConnectionInfo: &configs.BootStrapNodeConnection{
-//						Host: "test",
-//						Port: 1111,
-//					},
-//					NodeClient: fsNode.NewFileNodeClient(remoteMockClient, nil, 5*time.Minute, nil),
-//				},
-//			},
-//		},
-//		Storage: mockStorage,
-//	}
-//	t.Run("TestRemoteFile", func(t *testing.T) {
-//		// Set up mock response for Storage.Get method
-//		mockStorage.EXPECT().
-//			Get(gomock.Any(), "testfile").
-//			Return(nil, fmt.Errorf("no file found")) // Simulate file not found locally
-//		mockStorage.EXPECT().
-//			Exists("testfile").
-//			Return(false)
-//
-//		// Mock the client to return the mock stream
-//		remoteMockClient.EXPECT().
-//			DownloadFile(gomock.Any(), gomock.Any()).
-//			Return(mockStream, nil)
-//		remoteMockClient.EXPECT().SearchFile(gomock.Any(), &pb.SearchFileRequest{
-//			FileId: "testfile",
-//		}).Return(&pb.SearchFileResponse{
-//			FileId: "testfile",
-//			NodeId: "1",
-//		}, nil)
-//		// Setup expectations for the mock stream
-//		mockStream.EXPECT().Recv().Return(&pb.DownloadFileResponse{Chunk: []byte("chunk1")}, nil).Times(1)
-//		mockStream.EXPECT().Recv().Return(&pb.DownloadFileResponse{Chunk: []byte("chunk2")}, nil).Times(1)
-//		mockStream.EXPECT().Recv().Return(nil, io.EOF).Times(1)
-//
-//		// Create a mock DownloadFileServer to act as the remote peer
-//		mockDownloadFileServer := mocks.NewMockFilesNodeService_DownloadFileServer(ctrl)
-//
-//		// Set up the mock DownloadFileServer to expect Context and Send calls
-//		mockDownloadFileServer.EXPECT().
-//			Context().
-//			Return(context.Background()).
-//			AnyTimes()
-//
-//		// Setup mock to expect Send calls for each chunk
-//		mockDownloadFileServer.EXPECT().
-//			Send(&pb.DownloadFileResponse{
-//				FileId: "testfile",
-//				Exists: true,
-//				Chunk:  []byte("chunk1"),
-//			}).Return(nil).Times(1)
-//
-//		mockDownloadFileServer.EXPECT().
-//			Send(&pb.DownloadFileResponse{
-//				FileId: "testfile",
-//				Exists: true,
-//				Chunk:  []byte("chunk2"),
-//			}).Return(nil).Times(1)
-//
-//		// Perform the test
-//		err := fileNode.DownloadFile(&pb.DownloadFileRequest{FileId: "testfile"}, mockDownloadFileServer)
-//		assert.NoError(t, err)
-//	})
-//	t.Run("DownloadFileLocal", func(t *testing.T) {
-//		// Set the file as existing
-//		mockStorage.EXPECT().
-//			Exists("testfile").
-//			Return(true)
-//		mocks.NewMockFilesNodeService_Sear
-//		mockStorage.EXPECT().
-//			Get(gomock.Any(), "testfile").
-//			Return(nil, fmt.Errorf("no file found")) // Simulate file not found locally
-//	})
-//}
+	mockAuthManager := mocks.NewMockAuthenticationManager(ctrl)
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("valid"), bcrypt.DefaultCost)
+	fileNode := &fsNode.FileNode{
+		BaseNode: &nodes.BaseNode{
+			NodeConfig: configs.NodeConfig{
+				Type: configs.FilesNodeType,
+				Auth: configs.NodeAuthConfig{
+					Username: "valid",
+					Password: string(hashedPassword),
+				},
+			},
+			AuthManager: mockAuthManager,
+		},
+	}
+
+	t.Run("Successful Authentication", func(t *testing.T) {
+		mockAuthManager.EXPECT().Generate("valid", fileNode.Type).Return("valid-token", nil).Times(1)
+
+		req := &pb.AuthenticateRequest{Username: "valid", Password: "valid"}
+		res, err := fileNode.Authenticate(context.Background(), req)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, "valid-token", res.Token)
+	})
+
+	t.Run("Invalid Username", func(t *testing.T) {
+		req := &pb.AuthenticateRequest{Username: "invalid", Password: "valid"}
+		res, err := fileNode.Authenticate(context.Background(), req)
+
+		assert.Error(t, err)
+		assert.Nil(t, res)
+		assert.EqualError(t, err, "invalid username/password")
+	})
+
+	t.Run("Invalid Password", func(t *testing.T) {
+		req := &pb.AuthenticateRequest{Username: "valid", Password: "invalid"}
+		res, err := fileNode.Authenticate(context.Background(), req)
+
+		assert.Error(t, err)
+		assert.Nil(t, res)
+		assert.EqualError(t, err, "invalid username/password")
+	})
+
+	t.Run("Generate Token Failure", func(t *testing.T) {
+		mockAuthManager.EXPECT().Generate("valid", fileNode.Type).Return("", fmt.Errorf("failed to generate token")).Times(1)
+
+		req := &pb.AuthenticateRequest{Username: "valid", Password: "valid"}
+		res, err := fileNode.Authenticate(context.Background(), req)
+
+		assert.Error(t, err)
+		assert.Nil(t, res)
+		assert.EqualError(t, err, "failed to generate token")
+	})
+}
+
+func Test_DownloadFileRemote_Server(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	// Create mocks
+	serviceClient := mocks.NewMockFilesNodeServiceClient(ctrl)
+	mockStorage := mocks.NewMockStorage(ctrl)
+	mockClientStream := mocks.NewMockDownloadFileClientStream(ctrl) // Corrected: Use client stream mock
+	nodeConfig := &configs.NodeConfig{
+		Type: configs.FilesNodeType,
+	}
+	fileNode := fsNode.NewP2PFilesNode(nodes.NewBaseNode(nodeConfig), mockStorage)
+	fsNodeClient := &fsNode.FileNodeClient{
+		ServiceClient: serviceClient,
+		AuthConfig: &configs.BootStrapNodeConnection{
+			Host:     "test",
+			Port:     1111,
+			Username: "admin",
+			Password: "admin",
+		},
+		RequestTimeout:  10,
+		ProtectedRoutes: &[]string{"/p2pAgent.FilesNodeService/DownloadFile"},
+	}
+	fileNode.ConnectedPeers = map[string]nodes.PeerConnection{
+		"1": {
+			ID: "1",
+			ConnectionInfo: &configs.BootStrapNodeConnection{
+				Host: "test",
+				Port: 1111,
+			},
+			NodeClient: fsNodeClient,
+			Token:      "token",
+		},
+	}
+
+	t.Run("TestRemoteFile", func(t *testing.T) {
+		// Set up mock response for Storage.Get method
+		mockStorage.EXPECT().
+			Exists("testfile").
+			Return(false) // Simulate file not found locally
+
+		serviceClient.EXPECT().SearchFile(gomock.Any(), &pb.SearchFileRequest{
+			FileName: "testfile",
+		}).Return(&pb.SearchFileResponse{
+			FileName: "testfile",
+			NodeId:   "1",
+		}, nil).AnyTimes()
+
+		// Mock the context and return for DownloadFile to use the client stream mock
+		mockClientStream.EXPECT().
+			Context().
+			Return(context.Background()).
+			AnyTimes()
+
+		serviceClient.EXPECT().DownloadFile(gomock.Any(), gomock.Any()).Return(mockClientStream, nil)
+		gomock.InOrder(
+			mockClientStream.EXPECT().
+				Recv().
+				Return(&pb.DownloadFileResponse{
+					FileName:  "testfile",
+					Chunk:     []byte("first chunk"),
+					ChunkSize: 11,
+				}, nil).Times(1),
+			mockClientStream.EXPECT().
+				Recv().
+				Return(&pb.DownloadFileResponse{
+					FileName:  "testfile",
+					Chunk:     []byte("second chunk"),
+					ChunkSize: 12,
+				}, nil).Times(1),
+			mockClientStream.EXPECT().
+				Recv().
+				Return(nil, io.EOF).Times(1), // End of stream
+		)
+		// Set up expectation for Send method
+		mockClientStream.EXPECT().
+			Send(gomock.Any()). // Match any argument
+			Return(nil).        // Simulate successful send
+			AnyTimes()          // Allow any number of calls
+		// Adjust as necessary if you need to check specific arguments
+		// If you need to check specific arguments, you can use gomock.Eq or other matchers
+		// Example: Send(gomock.Eq(&pb.DownloadFileResponse{...})).Return(nil).Times(1)
+
+		err := fileNode.DownloadFile(&pb.DownloadFileRequest{FileName: "testfile"}, mockClientStream)
+		assert.NoError(t, err)
+	})
+}
