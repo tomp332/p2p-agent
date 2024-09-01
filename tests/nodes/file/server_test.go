@@ -379,6 +379,7 @@ func Test_DownloadFileRemote_Server(t *testing.T) {
 		mockStorage.EXPECT().
 			Exists("testfile").
 			Return(false) // Simulate file not found locally
+		mockStorage.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil)
 
 		serviceClient.EXPECT().SearchFile(gomock.Any(), &pb.SearchFileRequest{
 			FileName: "testfile",
