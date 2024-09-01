@@ -255,46 +255,110 @@ func (n *FileNode) ServiceRegister(server *server.GRPCServer) {
 	}
 }
 
-func (n *FileNode) ConnectToBootstrapPeers() error {
-	var wg sync.WaitGroup
-	errChan := make(chan error, len(n.BootstrapPeerAddrs))
+func (n *FileNode) ConnectToBootstrapPeers() {
+	log.Info().Msg("Starting bootstrap peer connection process in the background.")
 
-	for _, connectionInfo := range n.BootstrapPeerAddrs {
-		wg.Add(1)
-		go func(connectionInfo *configs.BootStrapNodeConnection) {
-			defer wg.Done()
-			con, err := n.ConnectToPeer(connectionInfo, n.NodeConfig.BootstrapNodeTimeout)
-			if err != nil {
-				log.Error().Err(err).Str("peer", fmt.Sprintf("%s:%v", connectionInfo.Host, connectionInfo.Port)).Msg("Failed to connect to bootstrap peer")
-				errChan <- err
+	go func() {
+		defer log.Info().Msg("Bootstrap peer connection process stopped.")
+
+		initialDelay := 500 * time.Millisecond
+		maxRetryDelay := configs.MainConfig.PeerHealthCheckConfig.FailedHealthCheckInterval * time.Second
+		monitorInterval := configs.MainConfig.PeerHealthCheckConfig.HealthCheckInterval * time.Second
+
+		retryDelay := initialDelay
+		for {
+			select {
+			case <-n.MainContext.Done():
+				// Context canceled, handle disconnections
+				log.Info().Msg("Main context canceled, initiating disconnection from bootstrap peers.")
+				for _, peer := range n.ConnectedPeers {
+					err := peer.NodeClient.Disconnect() // Assume Disconnect method exists
+					if err != nil {
+						log.Error().Err(err).Str("peerID", peer.ID).Msg("Failed to disconnect from peer.")
+					} else {
+						log.Trace().Str("peerID", peer.ID).Msg("Successfully disconnected from peer.")
+					}
+				}
 				return
-			}
-			fsNodeClient := NewFileNodeClient(pb.NewFilesNodeServiceClient(con), &n.ProtectedRoutes, connectionInfo, n.BootstrapNodeTimeout)
-			nodeId, err := fsNodeClient.Connect()
-			if err != nil {
-				log.Error().Err(err).Str("address", fmt.Sprintf("%s:%v", connectionInfo.Host, connectionInfo.Port)).Msg("")
-				errChan <- err
-				return
-			}
-			n.ConnectedPeers[nodeId] = nodes.PeerConnection{
-				ID:             nodeId,
-				ConnectionInfo: connectionInfo,
-				NodeClient:     fsNodeClient,
-			}
-			log.Debug().
-				Str("address", fmt.Sprintf("%s:%v", connectionInfo.Host, connectionInfo.Port)).
-				Str("nodeId", nodeId).
-				Msgf("Successfully connected to bootstrap node.")
-		}(&connectionInfo)
-	}
+			default:
+				// Attempt to connect to each bootstrap peer or monitor connected peers
+				var wg sync.WaitGroup
+				errChan := make(chan error, len(n.BootstrapPeerAddrs))
 
-	wg.Wait()
-	close(errChan)
+				for _, connectionInfo := range n.BootstrapPeerAddrs {
+					wg.Add(1)
+					go func(connectionInfo *configs.BootStrapNodeConnection) {
+						defer wg.Done()
 
-	if len(errChan) > 0 {
-		return <-errChan
-	}
-	return nil
+						// Check if peer is already connected
+						existingPeer, exists := n.getConnectedPeerByAddress(connectionInfo.Host, connectionInfo.Port)
+						if exists {
+							// Health check on connected peers
+							log.Trace().Str("peerID", existingPeer.ID).Msg("Performing health check on connected peer.")
+							err := n.healthCheckPeer(connectionInfo)
+							if err != nil {
+								log.Error().Err(err).Str("peer", fmt.Sprintf("%s:%v", connectionInfo.Host, connectionInfo.Port)).Msg("Health check failed for bootstrap peer.")
+								errChan <- err
+								return
+							}
+							log.Trace().Str("peerID", existingPeer.ID).Msg("Health check passed for connected peer.")
+							return
+						}
+
+						// Attempt to connect to peer
+						con, err := n.ConnectToPeer(connectionInfo, n.NodeConfig.BootstrapNodeTimeout)
+						if err != nil {
+							log.Error().Err(err).Str("peer", fmt.Sprintf("%s:%v", connectionInfo.Host, connectionInfo.Port)).Msg("Failed to connect to bootstrap peer.")
+							errChan <- err
+							return
+						}
+
+						fsNodeClient := NewFileNodeClient(pb.NewFilesNodeServiceClient(con), &n.ProtectedRoutes, connectionInfo, n.BootstrapNodeTimeout)
+
+						nodeId, err := fsNodeClient.Connect()
+						if err != nil {
+							log.Error().Err(err).Str("address", fmt.Sprintf("%s:%v", connectionInfo.Host, connectionInfo.Port)).Msg("Failed to connect to peer.")
+							errChan <- err
+							return
+						}
+
+						n.ConnectedPeers[nodeId] = nodes.PeerConnection{
+							ID:             nodeId,
+							ConnectionInfo: connectionInfo,
+							NodeClient:     fsNodeClient,
+						}
+
+						log.Info().
+							Str("address", fmt.Sprintf("%s:%v", connectionInfo.Host, connectionInfo.Port)).
+							Str("nodeId", nodeId).
+							Msg("Successfully connected to bootstrap node.")
+					}(&connectionInfo)
+				}
+
+				wg.Wait()
+				close(errChan)
+
+				// Handle errors if any
+				if len(errChan) > 0 {
+					err := <-errChan
+					log.Error().Err(err).Msg("Error encountered during connection to bootstrap peers.")
+				}
+
+				// Wait for the next attempt or health check
+				log.Trace().Dur("nextAttemptIn", retryDelay).Msg("Retrying connection to bootstrap peers after delay.")
+				time.Sleep(retryDelay)
+				retryDelay = minDuration(retryDelay*2, maxRetryDelay) // Exponential backoff with a smaller maximum delay
+
+				// Reset delay for connected peer monitoring
+				select {
+				case <-time.After(monitorInterval):
+					log.Trace().Msg("Monitoring interval elapsed, checking health of connected peers.")
+				case <-n.MainContext.Done():
+					return
+				}
+			}
+		}
+	}()
 }
 
 func (n *FileNode) Authenticate(_ context.Context, req *pb.AuthenticateRequest) (*pb.AuthenticateResponse, error) {
@@ -477,4 +541,34 @@ func (n *FileNode) createAuthInformation() {
 	// Make sure its stored decoded.
 	n.Auth.Password = string(hashedPassword)
 	n.AuthManager = managers.NewJWTManager(n.Auth.JwtSecret, 24*time.Hour)
+}
+
+// getConnectedPeerByAddress finds a connected peer by its address.
+func (n *FileNode) getConnectedPeerByAddress(host string, port int64) (*nodes.PeerConnection, bool) {
+	for _, peer := range n.ConnectedPeers {
+		if peer.ConnectionInfo.Host == host && peer.ConnectionInfo.Port == port {
+			return &peer, true
+		}
+	}
+	return nil, false
+}
+
+// healthCheckPeer performs a health check on a given peer connection.
+func (n *FileNode) healthCheckPeer(connectionInfo *configs.BootStrapNodeConnection) error {
+	con, err := n.ConnectToPeer(connectionInfo, n.NodeConfig.BootstrapNodeTimeout)
+	if err != nil {
+		return err
+	}
+	defer con.Close() // Ensure the connection is closed after health check
+
+	// Optionally perform additional health checks, e.g., ping the node or check a specific service endpoint
+	return nil
+}
+
+// minDuration returns the minimum of two durations.
+func minDuration(a, b time.Duration) time.Duration {
+	if a < b {
+		return a
+	}
+	return b
 }

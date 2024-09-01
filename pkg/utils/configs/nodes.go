@@ -48,3 +48,8 @@ type NodeConfig struct {
 type FilesNodeConfig struct {
 	Storage LocalStorageConfig `mapstructure:"storage"`
 }
+
+type PeerHealthCheckConfig struct {
+	HealthCheckInterval       time.Duration `mapstructure:"health_check_interval"`
+	FailedHealthCheckInterval time.Duration `mapstructure:"failed_health_check_interval"`
+}

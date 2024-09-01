@@ -27,7 +27,7 @@ func Test_UploadFile_Server(t *testing.T) {
 	nodeConfig := &configs.NodeConfig{
 		Type: configs.FilesNodeType,
 	}
-	fileNode := fsNode.NewP2PFilesNode(nodes.NewBaseNode(nodeConfig), mockStorage)
+	fileNode := fsNode.NewP2PFilesNode(nodes.NewBaseNode(nodeConfig, context.Background()), mockStorage)
 
 	// Sub-test for successful upload with correct file size
 	t.Run("Successful upload with correct file size", func(t *testing.T) {
@@ -140,7 +140,7 @@ func Test_DeleteFile_Server(t *testing.T) {
 	nodeConfig := &configs.NodeConfig{
 		Type: configs.FilesNodeType,
 	}
-	fileNode := fsNode.NewP2PFilesNode(nodes.NewBaseNode(nodeConfig), mockStorage)
+	fileNode := fsNode.NewP2PFilesNode(nodes.NewBaseNode(nodeConfig, context.Background()), mockStorage)
 
 	t.Run("delete file successfully", func(t *testing.T) {
 		mockStorage.EXPECT().Delete(gomock.Any(), "testfile").Return(nil)
@@ -163,7 +163,7 @@ func Test_DownloadFile_Server(t *testing.T) {
 		Type: configs.FilesNodeType,
 	}
 	serverStream := mocks.NewMockDownloadFileServerStream(ctrl)
-	fileNode := fsNode.NewP2PFilesNode(nodes.NewBaseNode(nodeConfig), mockStorage)
+	fileNode := fsNode.NewP2PFilesNode(nodes.NewBaseNode(nodeConfig, context.Background()), mockStorage)
 
 	t.Run("download file successfully", func(t *testing.T) {
 		configs.MainConfig.ID = "1"
@@ -350,7 +350,7 @@ func Test_DownloadFileRemote_Server(t *testing.T) {
 	nodeConfig := &configs.NodeConfig{
 		Type: configs.FilesNodeType,
 	}
-	fileNode := fsNode.NewP2PFilesNode(nodes.NewBaseNode(nodeConfig), mockStorage)
+	fileNode := fsNode.NewP2PFilesNode(nodes.NewBaseNode(nodeConfig, context.Background()), mockStorage)
 	fsNodeClient := &fsNode.FileNodeClient{
 		ServiceClient: serviceClient,
 		AuthConfig: &configs.BootStrapNodeConnection{
